@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin MangaYom</title>
+    
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    
+    <!-- Core Theme Variables (to match the main site) -->
+    <link rel="stylesheet" href="~/css/manga-theme.css" asp-append-version="true" />
+    
+    <!-- Admin Specific Styles -->
+    <style>
+        :root {
+            --admin-sidebar-width: 260px;
+            --font-admin: 'Nunito', sans-serif;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            background-color: var(--bg-body);
+            font-family: var(--font-admin);
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: var(--admin-sidebar-width);
+            background-color: #ffffff; /* Trắng chuẩn minimalism */
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+            transition: var(--transition-smooth);
+            box-shadow: 4px 0 20px rgba(0,0,0,0.02);
+        }
+        
+        [data-theme="dark"] .admin-sidebar {
+            background-color: var(--bg-surface);
+        }
+
+        .admin-brand {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-heading);
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            border-bottom: 1px solid transparent;
+            text-decoration: none;
+        }
+
+        .admin-brand span {
+            color: #d66c77; /* Sakura pink chữ YOM */
+        }
+
+        .admin-nav {
+            padding: 1rem 0;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .admin-nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1.25rem;
+            margin: 0.25rem 1rem;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .admin-nav-item:hover, .admin-nav-item.active {
+            background-color: #f3f9f4; /* Matcha siêu nhạt */
+            color: #2c7a4b; /* Matcha đậm */
+            box-shadow: 0 4px 10px rgba(207, 232, 213, 0.4);
+            transform: translateY(-2px); /* Micro-interaction nhe */
+        }
+
+        [data-theme="dark"] .admin-nav-item:hover, 
+        [data-theme="dark"] .admin-nav-item.active {
+            background-color: rgba(44, 122, 75, 0.2);
+            color: var(--color-matcha);
+            box-shadow: none;
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid transparent; /* Loại bỏ viền cứng */
+        }
+
+        .user-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.5rem;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-body);
+        }
+
+        .user-block img {
+            width: 40px; height: 40px; border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Main Content */
+        .admin-main {
+            flex: 1;
+            margin-left: var(--admin-sidebar-width);
+            display: flex;
+            flex-direction: column;
+            min-width: 0; /* Important for flex children overflowing */
+        }
+
+        .admin-topbar {
+            height: 70px;
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .page-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .admin-content-wrapper {
+            padding: 2rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Common Admin Cards */
+        .admin-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px; /* Bo góc 16px */
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03); /* Soft shadow */
+            transition: var(--transition-smooth);
+        }
+        
+        .admin-card:hover {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+        }
+
+        .admin-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition-smooth);
+            box-sizing: border-box;
+        }
+        
+        .admin-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(250, 218, 221, 0.3);
+        }
+
+        .admin-btn {
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            box-shadow: 0 4px 10px rgba(250, 218, 221, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background-color: #ff4d4f;
+            color: white;
+        }
+
+        /* Nút icon tròn xoe, căn giữa icon */
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px; /* Bo bo nhẹ, đổi từ 50% tròn xoe sang bo góc vuông nhẹ theo yêu cầu */
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            margin-left: 4px; /* Khoảng cách giữa các nút */
+        }
+        
+        .icon-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(0.95);
+        }
+
+        .action-cell {
+            text-align: right;
+            white-space: nowrap; 
+            vertical-align: middle;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th, .admin-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .admin-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .admin-table tr:hover {
+            background-color: var(--color-sakura-light);
+        }
+        [data-theme="dark"] .admin-table tr:hover {
+            background-color: rgba(250, 218, 221, 0.05);
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        .status-active { background: var(--color-matcha); color: #2c7a4b; }
+        .status-banned { background: #ffe6e6; color: #ff4d4f; }
+        [data-theme="dark"] .status-active { background: rgba(44, 122, 75, 0.2); }
+        [data-theme="dark"] .status-banned { background: rgba(255, 77, 79, 0.2); }
+
+        /* Mobile Sidebar */
+        .mobile-toggle {
+            display: none;
+        }
+
+        @@media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+            .admin-main {
+                margin-left: 0;
+            }
+            .mobile-toggle {
+                display: block;
+            }
+        }
+    </style>
+    
+    <script>
+        // Check theme setup from main layout
+        (function() {
+            var savedTheme = localStorage.getItem('theme');
+            var systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <a asp-controller="Admin" asp-action="Index" class="admin-brand">
+            <span class="material-symbols-rounded">auto_awesome</span> Manga<span>Yom</span>
+        </a>
+        <nav class="admin-nav">
+            <a asp-controller="Admin" asp-action="Index" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
+                <span class="material-symbols-rounded">dashboard</span> Dashboard
+            </a>
+            <a asp-controller="Admin" asp-action="Stories" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Stories" || ViewContext.RouteData.Values["Action"]?.ToString() == "AddStory" ? "active" : "")">
+                <span class="material-symbols-rounded">menu_book</span> Quản lý Truyện
+            </a>
+            <a asp-controller="Admin" asp-action="Chapters" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Chapters" || ViewContext.RouteData.Values["Action"]?.ToString() == "AddChapter" ? "active" : "")">
+                <span class="material-symbols-rounded">auto_stories</span> Quản lý Chương
+            </a>
+            <a asp-controller="Admin" asp-action="Categories" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Categories" ? "active" : "")">
+                <span class="material-symbols-rounded">category</span> Quản lý Thể loại
+            </a>
+            <a asp-controller="Admin" asp-action="Users" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Users" ? "active" : "")">
+                <span class="material-symbols-rounded">group</span> Người Dùng & Quyền
+            </a>
+            <a asp-controller="Admin" asp-action="Comments" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Comments" ? "active" : "")">
+                <span class="material-symbols-rounded">forum</span> Quản lý Bình luận
+            </a>
+            <a asp-controller="Admin" asp-action="Ratings" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Ratings" ? "active" : "")">
+                <span class="material-symbols-rounded">star_rate</span> Quản lý Đánh giá
+            </a>
+            <a asp-controller="Admin" asp-action="Analytics" class="admin-nav-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Analytics" ? "active" : "")">
+                <span class="material-symbols-rounded">analytics</span> Thống Kê
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-block">
+                <img src="https://via.placeholder.com/40" alt="Admin" />
+                <div>
+                    <div style="font-weight: 700; font-size: 0.9rem;">Admin Master</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">admin@mangayom.com</div>
+                </div>
+            </div>
+            <a asp-controller="Home" asp-action="Index" class="admin-nav-item" style="color: #ff4d4f; padding: 0.5rem 0; margin-top: 10px; justify-content: center; border:none;">
+                <span class="material-symbols-rounded">logout</span> Rời Admin
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="admin-main">
+        <header class="admin-topbar">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="icon-btn mobile-toggle" id="menuToggle"><span class="material-symbols-rounded">menu</span></button>
+                <h1 class="page-title">@ViewData["Title"]</h1>
+            </div>
+            <div class="topbar-actions">
+                <div class="search-bar" style="background:var(--bg-body); border-radius: 20px;">
+                    <span class="material-symbols-rounded" style="color:var(--text-secondary);">search</span>
+                    <input type="text" placeholder="Tìm kiếm nhanh..." style="border:none;background:transparent;outline:none; width: 150px; color:var(--text-primary);">
+                </div>
+                <button class="icon-btn" id="adminThemeToggle">
+                    <span class="material-symbols-rounded" id="adminThemeIcon">dark_mode</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="admin-content-wrapper">
+            @RenderBody()
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Theme toggle
+            const themeToggleBtn = document.getElementById('adminThemeToggle');
+            const themeIcon = document.getElementById('adminThemeIcon');
+            const root = document.documentElement;
+
+            if (root.getAttribute('data-theme') === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                if(themeIcon) themeIcon.textContent = 'light_mode';
+            }
+
+            if(themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    if (root.getAttribute('data-theme') === 'dark') {
+                        root.removeAttribute('data-theme');
+                        document.body.removeAttribute('data-theme');
+                        localStorage.setItem('theme', 'light');
+                        if(themeIcon) themeIcon.textContent = 'dark_mode';
+                    } else {
+                        root.setAttribute('data-theme', 'dark');
+                        document.body.setAttribute('data-theme', 'dark');
+                        localStorage.setItem('theme', 'dark');
+                        if(themeIcon) themeIcon.textContent = 'light_mode';
+                    }
+                });
+            }
+
+            // Mobile menu toggle
+            document.getElementById('menuToggle').addEventListener('click', () => {
+                document.getElementById('adminSidebar').classList.toggle('open');
+            });
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,109 @@
+@{
+    ViewData["Title"] = "Quản lý Bình Luận";
+    Layout = "_AdminLayout";
+    var comments = ViewBag.Comments as IEnumerable<dynamic>;
+    var search = ViewBag.Search as string;
+    var showDeleted = ViewBag.ShowDeleted != null ? (bool)ViewBag.ShowDeleted : false;
+    var currentPage = ViewBag.CurrentPage != null ? (int)ViewBag.CurrentPage : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+}
+
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; font-size: 1.25rem;">Danh Sách Bình Luận</h3>
+        
+        <div style="display: flex; gap: 10px;">
+            <form method="get" action="/Admin/Comments" style="display: flex; gap: 10px;">
+                <div class="search-bar" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 5px 15px; display:flex; align-items:center; height:35px; box-sizing:border-box;">
+                    <span class="material-symbols-rounded" style="color:var(--text-secondary); font-size: 20px;">search</span>
+                    <input type="text" name="search" value="@search" placeholder="Tìm kiếm comment..." style="border:none;background:transparent;outline:none; width: 250px; color:var(--text-primary); margin-left: 8px;">
+                </div>
+                <select name="showDeleted" class="admin-input" style="width: 150px; padding: 5px; height: 35px;" onchange="this.form.submit()">
+                    <option value="false" selected="@(!showDeleted)">Bình thường</option>
+                    <option value="true" selected="@(showDeleted)">Đã xóa/Ẩn</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th style="width: 150px;">Người Dùng</th>
+                    <th>Nội Dung Bình Luận</th>
+                    <th>Thuộc Truyện</th>
+                    <th style="width: 120px;">Trạng Thái</th>
+                    <th style="width: 120px; text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(comments != null && comments.Any())
+                {
+                    foreach (var c in comments)
+                    {
+                        <tr>
+                            <td style="color: var(--text-secondary);">#@c.CommentId</td>
+                            <td style="font-weight: 600; color: var(--text-primary);">@c.Username</td>
+                            <td>
+                                @if (c.IsDeleted) {
+                                    <div style="font-size: 0.95rem; color: #ff4d4f; font-style: italic;">[Đã bị xóa/ẩn] @c.Content</div>
+                                } else {
+                                    <div style="font-size: 0.95rem; color: var(--text-primary);">@c.Content</div>
+                                }
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">@c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td style="font-size: 0.9rem; font-weight: 600;">@c.StoryTitle</td>
+                            <td>
+                                @if(!c.IsDeleted) {
+                                    <span class="status-badge status-active">Hiển thị</span>
+                                } else {
+                                    <span class="status-badge status-banned">Đã Ẩn</span>
+                                }
+                            </td>
+                            <td class="action-cell">
+                                @if(!c.IsDeleted) {
+                                    <button class="icon-btn" title="Ẩn Bình Luận" style="color: #ff9800; background: #fff3e0; border-radius: 4px; padding: 4px;"><span class="material-symbols-rounded">visibility_off</span></button>
+                                } else {
+                                    <button class="icon-btn" title="Khôi phục" style="color: var(--color-matcha); background: rgba(207, 232, 213, 0.4); border-radius: 4px; padding: 4px;"><span class="material-symbols-rounded">restore</span></button>
+                                }
+                                <button class="icon-btn" title="Xóa" style="color: #ff4d4f; background: #ffe6e6; border-radius: 4px; padding: 4px;"><span class="material-symbols-rounded">delete</span></button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="6" style="text-align:center; color: var(--text-secondary);">Không tìm thấy bình luận</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if(totalPages > 1)
+    {
+        <!-- Pagination -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="font-size: 0.9rem; color: var(--text-secondary);">Trang @currentPage / @totalPages</div>
+            <div style="display: flex; gap: 5px;">
+                @if(currentPage > 1) {
+                    <a asp-controller="Admin" asp-action="Comments" asp-route-page="@(currentPage-1)" asp-route-search="@search" asp-route-showDeleted="@showDeleted.ToString().ToLower()" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_left</span></a>
+                }
+                
+                @for(int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                {
+                    if(i == currentPage) {
+                        <span class="admin-btn" style="background: var(--color-matcha); color: #2c7a4b; border: 1px solid var(--color-matcha); padding: 5px 15px;">@i</span>
+                    } else {
+                        <a asp-controller="Admin" asp-action="Comments" asp-route-page="@i" asp-route-search="@search" asp-route-showDeleted="@showDeleted.ToString().ToLower()" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 15px; color: var(--text-secondary); text-decoration:none;">@i</a>
+                    }
+                }
+
+                @if(currentPage < totalPages) {
+                    <a asp-controller="Admin" asp-action="Comments" asp-route-page="@(currentPage+1)" asp-route-search="@search" asp-route-showDeleted="@showDeleted.ToString().ToLower()" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_right</span></a>
+                }
+            </div>
+        </div>
+    }
+</div>

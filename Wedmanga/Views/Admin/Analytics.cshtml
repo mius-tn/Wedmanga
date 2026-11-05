@@ -1,0 +1,136 @@
+@{
+    ViewData["Title"] = "Thống Kê Nâng Cao";
+    Layout = "_AdminLayout";
+
+    var totalStories = ViewBag.TotalStories ?? 0;
+    var totalUsers = ViewBag.TotalUsers ?? 0;
+    var totalComments = ViewBag.TotalComments ?? 0;
+    var totalRatings = ViewBag.TotalRatings ?? 0;
+
+    var topViewedStories = ViewBag.TopViewedStories as IEnumerable<dynamic> ?? new List<dynamic>();
+    var categoryDistribution = ViewBag.CategoryDistribution as IEnumerable<dynamic> ?? new List<dynamic>();
+    var newUsersPerDay = ViewBag.NewUsersPerDay as IEnumerable<dynamic> ?? new List<dynamic>();
+}
+
+<!-- Cần Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-container-large {
+        width: 100%;
+        height: 350px;
+        position: relative;
+    }
+
+    @@media (max-width: 992px) {
+        .analytics-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="admin-card" style="margin-bottom: 2rem;">
+    <h3 style="margin-top:0; margin-bottom: 1.5rem; color: var(--text-primary); border-bottom: 2px solid var(--color-sakura-light); padding-bottom: 10px; display:inline-block;">Biểu Đồ Tăng Trưởng Người Dùng (30 Ngày Qua)</h3>
+    <div class="chart-container-large">
+        <canvas id="userGrowthChart"></canvas>
+    </div>
+</div>
+
+<div class="analytics-grid">
+    <div class="admin-card">
+        <h3 style="margin-top:0; margin-bottom: 1.5rem; color: var(--text-primary);">Phân Bổ Thể Loại Truyện</h3>
+        <div class="chart-container-large" style="height: 280px;">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="admin-card">
+        <h3 style="margin-top:0; margin-bottom: 2rem; color: var(--text-primary);">Hoạt động tổng quan</h3>
+        <ul style="list-style: none; padding: 0; margin: 0; color: var(--text-secondary); line-height: 2.2;">
+            <li>Tổng Truyện: <b style="color:var(--text-primary);">@totalStories</b></li>
+            <li>Tổng Người Dùng: <b style="color:var(--text-primary);">@totalUsers</b></li>
+            <li>Tổng Bình Luận: <b style="color:var(--text-primary);">@totalComments</b></li>
+            <li>Tổng Đánh Giá: <b style="color:var(--text-primary);">@totalRatings</b></li>
+        </ul>
+        
+        <h4 style="margin-top:1.5rem; margin-bottom: 1rem; color: var(--text-primary);">Top Truyện Xem Nhiều</h4>
+        <ol style="padding-left: 20px; color: var(--text-secondary); line-height: 1.8;">
+            @foreach(var top in topViewedStories.Take(5))
+            {
+                <li><span style="color:var(--text-primary);">@top.Title</span> - @top.ViewCount views</li>
+            }
+        </ol>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Line chart User Growth Data from ViewBag
+        const growthLabels = @Html.Raw(Json.Serialize(newUsersPerDay.Select(x => ((DateTime)x.Date).ToString("dd/MM"))));
+        const growthData = @Html.Raw(Json.Serialize(newUsersPerDay.Select(x => x.Count)));
+
+        const ctxGrowth = document.getElementById('userGrowthChart').getContext('2d');
+        new Chart(ctxGrowth, {
+            type: 'line',
+            data: {
+                labels: growthLabels.length > 0 ? growthLabels : ['Chưa có dữ liệu'],
+                datasets: [{
+                    label: 'Người dùng đăng ký',
+                    data: growthData.length > 0 ? growthData : [0],
+                    borderColor: '#8b3dff', // Indigo
+                    backgroundColor: 'rgba(139, 61, 255, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#8b3dff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true },
+                    x: { ticks: { maxRotation: 45, minRotation: 45 } }
+                }
+            }
+        });
+
+        // Bar Chart Category Distribution from ViewBag
+        const catLabels = @Html.Raw(Json.Serialize(categoryDistribution.Select(x => x.Name)));
+        const catData = @Html.Raw(Json.Serialize(categoryDistribution.Select(x => x.Count)));
+        
+        // Sinh bảng màu ngẫu nhiên nhưng theo tone pastel
+        const baseColors = ['#FADADD', '#CFE8D5', '#c5cae9', '#fff8e1', '#eef0fa', '#ffe6e6', '#e0f7fa', '#f3e5f5'];
+        const bgColors = catData.map((_, i) => baseColors[i % baseColors.length]);
+
+        const ctxCat = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctxCat, {
+            type: 'doughnut',
+            data: {
+                labels: catLabels.length > 0 ? catLabels : ['Chưa có dữ liệu'],
+                datasets: [
+                    {
+                        data: catData.length > 0 ? catData : [1],
+                        backgroundColor: catLabels.length > 0 ? bgColors : ['#e0e0e0'],
+                        borderWidth: 1,
+                        borderColor: '#ffffff'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+    });
+</script>

@@ -1,0 +1,377 @@
+@model Wedmanga.Models.Entities.Chapter
+@{
+    ViewData["Title"] = "Chỉnh Sửa Chương";
+    Layout = "_AdminLayout";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- Cho Markdown Editor -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+
+<style>
+    .form-label { font-weight: 600; margin-bottom: 8px; display: block; color: var(--text-primary); font-size: 0.95rem; }
+    .required::after { content: '*'; color: #ff4d4f; margin-left: 4px; }
+    .editor-toolbar { border-color: var(--border-color); background: var(--bg-surface); border-radius: var(--radius-md) var(--radius-md) 0 0; }
+    .CodeMirror { border-color: var(--border-color); border-radius: 0 0 var(--radius-md) var(--radius-md); font-family: inherit; }
+    .editor-toolbar a.active, .editor-toolbar a:hover { background: rgba(207, 232, 213, 0.4); border-color: var(--color-matcha); }
+
+    /* Drag & Drop Cover for Chapter Images */
+    .images-upload-box {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        background: var(--bg-body);
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+    .images-upload-box:hover, .images-upload-box.dragover {
+        border-color: var(--color-matcha);
+        background: rgba(207, 232, 213, 0.2);
+    }
+
+    .images-upload-box i {
+        font-size: 3rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+    
+    .images-input {
+        position: absolute;
+        width: 100%; height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .preview-image-wrapper {
+        position: relative;
+        width: 100px;
+        height: 140px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        cursor: grab;
+    }
+
+    .preview-image-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>
+<!-- Cho Kéo Thả Sắp Xếp Ảnh (SortableJS) -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<form asp-controller="Admin" asp-action="EditChapter" method="post" enctype="multipart/form-data">
+<input type="hidden" name="chapterId" value="@Model.ChapterId" />
+
+<div class="admin-card" style="max-width: 900px; margin: 0 auto;">
+    <h3 style="margin-top:0; margin-bottom: 1.5rem; color: var(--text-primary); border-bottom: 2px solid var(--color-matcha); padding-bottom: 10px; display:inline-block;">Chỉnh Sửa Chương</h3>
+    
+    @Html.ValidationSummary(false, "", new { @class = "text-danger", style = "margin-bottom: 1rem; color: #ff4d4f; font-weight: bold;" })
+    
+    <div style="margin-bottom: 1.5rem;">
+        <label class="form-label required">Truyện (Không thể sửa truyện của chương sau khi tạo)</label>
+        <input type="text" class="admin-input" value="@Model.Story?.Title" disabled style="background: var(--bg-body);" />
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div>
+            <label class="form-label required">Số Chương</label>
+            <input type="number" name="chapterNumber" class="admin-input" value="@Model.ChapterNumber" required>
+        </div>
+        <div>
+            <label class="form-label">Tên Chương (Tiêu đề phụ)</label>
+            <input type="text" name="title" class="admin-input" value="@Model.Title" placeholder="VD: Lời Tỏ Tình Dưới Tán Hoa">
+        </div>
+    </div>
+
+    <div id="textEditorSection" style="margin-bottom: 1.5rem; display: none;">
+        <label class="form-label required">Nội Dung Chương (Hỗ trợ Markdown)</label>
+        <textarea id="markdownEditor" name="content" rows="10">@Model.Content</textarea>
+    </div>
+
+    <div id="imageUploadSection" style="margin-bottom: 1.5rem; display: none;">
+        <label class="form-label required">Ảnh Truyện Tranh Hiện Tại (Kéo thả để đổi vị trí, click (X) để xóa)</label>
+        
+        <!-- Nơi chứa các ảnh đã lưu trên server -->
+        <div class="preview-container" id="existingPreviewContainer" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
+            @{
+                if (!string.IsNullOrEmpty(Model.Content) && !Model.Content.Contains("<img") && !Model.Content.Contains("<p")) {
+                    var lines = Model.Content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    int idx = 1;
+                    foreach (var line in lines) {
+                        var url = line.Trim();
+                        if (url.StartsWith("http") || url.StartsWith("/") || url.StartsWith("data:image")) {
+                            <div class="preview-image-wrapper existing-image" data-url="@url">
+                                <img src="@url" alt="Trang @idx" />
+                                <div class="badge-index" style="position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.6); color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">@idx</div>
+                                <button type="button" class="remove-btn" style="position: absolute; top: 5px; right: 5px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">&times;</button>
+                            </div>
+                            idx++;
+                        }
+                    }
+                }
+            }
+        </div>
+
+        <label class="form-label">Tải Thêm Ảnh Mới (Ảnh mới sẽ nối vào cuối)</label>
+        <div class="images-upload-box" id="dropZone">
+            <input type="file" id="chapterImages" name="chapterImages" class="images-input" accept="image/*" multiple>
+            <span class="material-symbols-rounded" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem;">collections</span>
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Kéo thả ảnh bổ sung vào đây</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">hoặc click để chọn nhiều tệp (JPG, PNG)</div>
+        </div>
+        
+        <!-- Nơi chứa các ảnh mới chuẩn bị upload -->
+        <div class="preview-container" id="newPreviewContainer"></div>
+
+        <!-- Hidden input dùng để lấy danh sách URL ảnh cũ gửi kẹp lên server -->
+        <input type="hidden" id="existingContentData" name="content" value="">
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 1rem;">
+        <a asp-controller="Admin" asp-action="Chapters" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-primary);">Hủy</a>
+        <button type="submit" class="admin-btn btn-primary" style="background-color: var(--color-matcha); color: #2c7a4b;">
+            <span class="material-symbols-rounded">publish</span> Lưu Thay Đổi
+        </button>
+    </div>
+</div>
+</form>
+
+<script>
+    $(document).ready(function() {
+        var simplemde = new SimpleMDE({ 
+            element: document.getElementById("markdownEditor"),
+            spellChecker: false,
+            placeholder: "Nhập nội dung truyện chữ tại đây..."
+        });
+
+        // Determine if light novel or manga to show appropriate section
+        // Get boolean from ViewBag.Stories equivalent
+        var isTruyenChu = false;
+        @if (ViewBag.Stories != null && Model.Story != null)
+        {
+            var currentStory = ((IEnumerable<dynamic>)ViewBag.Stories).FirstOrDefault(s => s.StoryId == Model.StoryId);
+            if (currentStory != null && currentStory.IsTruyenChu == true) {
+                <text>isTruyenChu = true;</text>
+            }
+        }
+
+        if (isTruyenChu) {
+            $('#textEditorSection').show();
+            $('#imageUploadSection').hide();
+        } else {
+            $('#textEditorSection').hide();
+            $('#imageUploadSection').show();
+            // Clear or disable simpleMDE so it doesn't conflict during form submit
+            document.getElementById("markdownEditor").disabled = true;
+        }
+
+        // Logic for Existing Images (Sắp xếp & Xóa)
+        const existingContainer = document.getElementById('existingPreviewContainer');
+        const hiddenContentInput = document.getElementById('existingContentData');
+        
+        function updateHiddenContentFallback() {
+            // Lấy toàn bộ các data-url từ các phần tử hiện hữu
+            const existingUrls = [];
+            if (existingContainer) {
+                const items = existingContainer.querySelectorAll('.existing-image');
+                items.forEach(el => existingUrls.push(el.getAttribute('data-url')));
+            }
+            hiddenContentInput.value = existingUrls.join("\n");
+        }
+
+        if (existingContainer) {
+            existingContainer.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-btn')) {
+                    e.preventDefault(); e.stopPropagation();
+                    e.target.closest('.existing-image').remove();
+                    
+                    // Cập nhật lại số thứ tự
+                    const items = existingContainer.children;
+                    for (let i = 0; i < items.length; i++) {
+                        const badge = items[i].querySelector('.badge-index');
+                        if (badge) badge.innerText = i + 1;
+                    }
+                    updateHiddenContentFallback();
+                }
+            });
+
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(existingContainer, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function () {
+                        const items = existingContainer.children;
+                        for (let i = 0; i < items.length; i++) {
+                            const badge = items[i].querySelector('.badge-index');
+                            if (badge) badge.innerText = i + 1;
+                        }
+                        updateHiddenContentFallback();
+                    }
+                });
+            }
+            updateHiddenContentFallback(); // Khởi tạo giá trị ban đầu
+        }
+
+        // Logic for New Image Uploads (Tương tự AddChapter)
+        const imagesInput = document.getElementById('chapterImages');
+        const newPreviewContainer = document.getElementById('newPreviewContainer');
+        let selectedFiles = [];
+
+        imagesInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                const newFiles = Array.from(this.files);
+                selectedFiles = selectedFiles.concat(newFiles);
+                updateFileInput(); 
+                renderNewPreviews();
+            }
+        });
+
+        function updateFileInput() {
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            imagesInput.files = dt.files;
+        }
+
+        function renderNewPreviews() {
+            newPreviewContainer.innerHTML = ''; 
+            // Số thứ tự tiếp nối của Existing Container
+            let startIndex = existingContainer ? existingContainer.children.length : 0;
+
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'preview-image-wrapper';
+                    wrapper.style.cursor = 'grab';
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.title = file.name;
+                    wrapper.appendChild(img);
+                    
+                    const badge = document.createElement('div');
+                    badge.className = 'badge-index';
+                    badge.style.position = 'absolute';
+                    badge.style.top = '5px';
+                    badge.style.left = '5px';
+                    badge.style.background = 'rgba(0,0,0,0.6)';
+                    badge.style.color = 'white';
+                    badge.style.padding = '2px 6px';
+                    badge.style.borderRadius = '4px';
+                    badge.style.fontSize = '12px';
+                    badge.innerText = startIndex + index + 1;
+                    wrapper.appendChild(badge);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.style.position = 'absolute';
+                    removeBtn.style.top = '5px';
+                    removeBtn.style.right = '5px';
+                    removeBtn.style.background = '#ff4d4f';
+                    removeBtn.style.color = 'white';
+                    removeBtn.style.border = 'none';
+                    removeBtn.style.borderRadius = '50%';
+                    removeBtn.style.width = '20px';
+                    removeBtn.style.height = '20px';
+                    removeBtn.style.cursor = 'pointer';
+                    removeBtn.style.display = 'flex';
+                    removeBtn.style.alignItems = 'center';
+                    removeBtn.style.justifyContent = 'center';
+                    removeBtn.style.fontSize = '14px';
+                    wrapper.appendChild(removeBtn);
+
+                    newPreviewContainer.appendChild(wrapper);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (newPreviewContainer) {
+            newPreviewContainer.addEventListener('click', function(e) {
+                const btn = e.target.closest('.remove-btn');
+                if (btn) {
+                    e.preventDefault(); e.stopPropagation();
+                    const wrapper = btn.closest('.preview-image-wrapper');
+                    const index = Array.from(newPreviewContainer.children).indexOf(wrapper);
+                    
+                    selectedFiles.splice(index, 1);
+                    wrapper.remove();
+                    updateFileInput();
+                    
+                    let startIndex = existingContainer ? existingContainer.children.length : 0;
+                    const items = newPreviewContainer.children;
+                    for (let i = 0; i < items.length; i++) {
+                        const badge = items[i].querySelector('.badge-index');
+                        if (badge) badge.innerText = startIndex + i + 1;
+                    }
+                }
+            });
+
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(newPreviewContainer, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function (evt) {
+                        if (evt.oldIndex === evt.newIndex) return;
+                        
+                        const movedItem = selectedFiles.splice(evt.oldIndex, 1)[0];
+                        selectedFiles.splice(evt.newIndex, 0, movedItem);
+                        updateFileInput();
+                        
+                        let startIndex = existingContainer ? existingContainer.children.length : 0;
+                        const items = newPreviewContainer.children;
+                        for (let i = 0; i < items.length; i++) {
+                            const badge = items[i].querySelector('.badge-index');
+                            if (badge) badge.innerText = startIndex + i + 1;
+                        }
+                    }
+                });
+            }
+        }
+
+        // Xử lý Validation thủ công khi Submit Form
+        $('form').on('submit', function(e) {
+            if (!isTruyenChu) { // là truyện tranh
+                const existingUrls = hiddenContentInput.value.trim();
+                if (existingUrls === "" && selectedFiles.length === 0) {
+                    e.preventDefault();
+                    alert("Chương truyện tranh phải có ít nhất 1 trang ảnh (Cũ hoặc Mới)!");
+                    return false;
+                }
+                // Nếu disable không cho gửi qua post (tùy thuộc vào require)
+                if (document.getElementById("markdownEditor")) {
+                   document.getElementById("markdownEditor").disabled = true;
+                }
+            } else { // là truyện chữ
+                if (simplemde.value().trim() === "") {
+                    e.preventDefault();
+                    alert("Vui lòng nhập nội dung cho truyện chữ!");
+                    return false;
+                }
+                document.getElementById('existingContentData').disabled = true;
+            }
+        });
+    });
+</script>

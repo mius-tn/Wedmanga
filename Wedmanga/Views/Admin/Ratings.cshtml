@@ -1,0 +1,107 @@
+@{
+    ViewData["Title"] = "Quản lý Đánh Giá";
+    Layout = "_AdminLayout";
+    var ratings = ViewBag.Ratings as IEnumerable<dynamic>;
+    var stories = ViewBag.Stories as IEnumerable<dynamic>;
+    var filterStoryId = ViewBag.FilterStoryId as int?;
+    var minRating = ViewBag.MinRating as int?;
+    var currentPage = ViewBag.CurrentPage != null ? (int)ViewBag.CurrentPage : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+}
+
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; font-size: 1.25rem;">Lượt Đánh Giá Truyện (Rating)</h3>
+        
+        <div style="display: flex; gap: 10px;">
+            <form method="get" action="/Admin/Ratings" style="display: flex; gap: 10px;">
+                <select name="storyId" class="admin-input" style="width: 200px; padding: 5px; height: 35px;" onchange="this.form.submit()">
+                    <option value="">-- Lọc theo truyện --</option>
+                    @if(stories != null) {
+                        foreach(var s in stories) {
+                            <option value="@s.StoryId" selected="@(filterStoryId == s.StoryId)">@s.Title (★ @s.RatingAvg.ToString("0.0"))</option>
+                        }
+                    }
+                </select>
+                <select name="minRating" class="admin-input" style="width: 150px; padding: 5px; height: 35px;" onchange="this.form.submit()">
+                    <option value="">-- Lọc số sao --</option>
+                    <option value="5" selected="@(minRating == 5)">5 Sao</option>
+                    <option value="4" selected="@(minRating == 4)">Từ 4 Sao</option>
+                    <option value="3" selected="@(minRating == 3)">Từ 3 Sao</option>
+                    <option value="1" selected="@(minRating == 1)">Từ 1 Sao</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th>Truyện Đánh Giá</th>
+                    <th style="width: 150px;">Người Dùng</th>
+                    <th style="width: 120px;">Số Sao</th>
+                    <th style="width: 150px;">Thời Gian</th>
+                    <th style="width: 100px; text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(ratings != null && ratings.Any())
+                {
+                    foreach (var r in ratings)
+                    {
+                        <tr>
+                            <td style="color: var(--text-secondary);">#@r.RatingId</td>
+                            <td style="font-weight: 600; color: var(--text-primary);">@r.StoryTitle</td>
+                            <td>@r.Username</td>
+                            <td>
+                                <div style="color: #fadb14; font-size: 1.1rem;">
+                                    @for(int i = 0; i < r.RatingValue; i++) { <text>★</text> }
+                                    @for(int i = r.RatingValue; i < 5; i++) { 
+                                        <span style="color: var(--border-color);">★</span> 
+                                    }
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">@r.RatingValue / 5</div>
+                            </td>
+                            <td style="font-size: 0.85rem; color: var(--text-secondary);">@r.CreatedAt.ToString("dd-MM-yyyy HH:mm")</td>
+                            <td class="action-cell">
+                                <button class="icon-btn" title="Xóa Đánh Giá" style="color: #ff4d4f; background: #ffe6e6; border-radius: 4px; padding: 4px;"><span class="material-symbols-rounded">delete</span></button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="6" style="text-align:center; color: var(--text-secondary);">Không tìm thấy đánh giá</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if(totalPages > 1)
+    {
+        <!-- Pagination -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="font-size: 0.9rem; color: var(--text-secondary);">Trang @currentPage / @totalPages</div>
+            <div style="display: flex; gap: 5px;">
+                @if(currentPage > 1) {
+                    <a asp-controller="Admin" asp-action="Ratings" asp-route-page="@(currentPage-1)" asp-route-storyId="@filterStoryId" asp-route-minRating="@minRating" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_left</span></a>
+                }
+                
+                @for(int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                {
+                    if(i == currentPage) {
+                        <span class="admin-btn" style="background: var(--color-matcha); color: #2c7a4b; border: 1px solid var(--color-matcha); padding: 5px 15px;">@i</span>
+                    } else {
+                        <a asp-controller="Admin" asp-action="Ratings" asp-route-page="@i" asp-route-storyId="@filterStoryId" asp-route-minRating="@minRating" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 15px; color: var(--text-secondary); text-decoration:none;">@i</a>
+                    }
+                }
+
+                @if(currentPage < totalPages) {
+                    <a asp-controller="Admin" asp-action="Ratings" asp-route-page="@(currentPage+1)" asp-route-storyId="@filterStoryId" asp-route-minRating="@minRating" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_right</span></a>
+                }
+            </div>
+        </div>
+    }
+</div>

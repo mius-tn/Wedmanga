@@ -1,0 +1,110 @@
+@{
+    ViewData["Title"] = "Quản Lý Thể Loại";
+    Layout = "_AdminLayout";
+    var categories = ViewBag.Categories as IEnumerable<dynamic>;
+    var search = ViewBag.Search as string;
+}
+
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; font-size: 1.25rem;">Danh Sách Thể Loại (Categories)</h3>
+        
+        <div style="display: flex; gap: 10px;">
+            <form method="get" action="/Admin/Categories" class="search-bar" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 5px 15px; display:flex; align-items:center;">
+                <span class="material-symbols-rounded" style="color:var(--text-secondary); font-size: 20px;">search</span>
+                <input type="text" name="search" value="@search" placeholder="Tìm tên thể loại..." style="border:none;background:transparent;outline:none; width: 200px; color:var(--text-primary); margin-left: 8px;">
+            </form>
+            
+            <a asp-action="AddCategory" class="admin-btn btn-primary" style="background-color: var(--color-matcha); color: #2c7a4b; box-shadow: 0 4px 10px rgba(207, 232, 213, 0.5); text-decoration: none;">
+                <span class="material-symbols-rounded">add</span>
+                Thêm Thể Loại
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function editCategoryPrompt(id, oldName, oldDesc) {
+            const newName = prompt("Nhập tên thể loại mới:", oldName);
+            if (newName && newName.trim() !== "") {
+                const newDesc = prompt("Nhập mô tả mới:", oldDesc);
+                
+                // Create a dynamic form and submit it
+                const form = document.createElement("form");
+                form.method = "post";
+                form.action = "/Admin/EditCategory";
+                
+                const tokenInput = document.createElement("input");
+                tokenInput.type = "hidden";
+                tokenInput.name = "__RequestVerificationToken";
+                tokenInput.value = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+                
+                const idInput = document.createElement("input");
+                idInput.type = "hidden";
+                idInput.name = "categoryId";
+                idInput.value = id;
+                
+                const nameInput = document.createElement("input");
+                idInput.type = "hidden";
+                nameInput.name = "name";
+                nameInput.value = newName.trim();
+                
+                const descInput = document.createElement("input");
+                descInput.type = "hidden";
+                descInput.name = "description";
+                descInput.value = newDesc || "";
+                
+                form.appendChild(tokenInput);
+                form.appendChild(idInput);
+                form.appendChild(nameInput);
+                form.appendChild(descInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+    
+    <!-- Token for dynamic forms -->
+    <form style="display:none;">@Html.AntiForgeryToken()</form>
+
+    <div style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th>Tên Thể Loại</th>
+                    <th>Slug (Đường Dẫn)</th>
+                    <th>Mô Tả</th>
+                    <th>Số Truyện</th>
+                    <th class="action-cell">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(categories != null && categories.Any())
+                {
+                    foreach(var cat in categories)
+                    {
+                        <tr>
+                            <td style="color: var(--text-secondary);">#@cat.CategoryId</td>
+                            <td style="font-weight: 700; color: var(--text-primary);">@cat.Name</td>
+                            <td style="color: var(--text-secondary);">@cat.Slug</td>
+                            <td>@(string.IsNullOrEmpty(cat.Description) ? "Không có" : (cat.Description.Length > 50 ? cat.Description.Substring(0, 50) + "..." : cat.Description))</td>
+                            <td style="font-weight: 600;">@cat.MangaCount</td>
+                            <td class="action-cell">
+                                <button type="button" class="icon-btn" title="Chỉnh sửa" style="color: var(--color-matcha); background: rgba(207, 232, 213, 0.4);" onclick="editCategoryPrompt(@cat.CategoryId, '@Html.Raw(cat.Name.Replace("'", "\\'"))', '@Html.Raw((cat.Description ?? "").Replace("'", "\\'"))')"><span class="material-symbols-rounded">edit</span></button>
+                                <form asp-controller="Admin" asp-action="DeleteCategory" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thể loại này?');">
+                                    <input type="hidden" name="categoryId" value="@cat.CategoryId" />
+                                    <button type="submit" class="icon-btn" title="Xóa" style="color: #ff4d4f; background: #ffe6e6; border:none; cursor:pointer;"><span class="material-symbols-rounded">delete</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="6" style="text-align:center; color: var(--text-secondary);">Không có dữ liệu</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

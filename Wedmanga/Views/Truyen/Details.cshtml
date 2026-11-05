@@ -1,0 +1,531 @@
+@using Wedmanga.Models.Entities
+@{
+    var story = ViewBag.Story as Story;
+    ViewData["Title"] = story != null ? $"Chi Tiết Truyện - {story.Title}" : "Không tìm thấy truyện";
+}
+
+@section Scripts {
+    <style>
+        .details-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Top Section: Info */
+        .manga-info-header {
+            display: flex;
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .manga-cover {
+            flex: 0 0 300px;
+        }
+
+        .manga-cover-img {
+            width: 100%;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-soft);
+            object-fit: cover;
+            aspect-ratio: 3 / 4;
+            background-color: var(--color-sakura-light);
+        }
+
+        .manga-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .manga-title {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            color: var(--color-indigo);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        [data-theme="dark"] .manga-title {
+            color: #d88c94; /* Soft pink-purple in dark mode */
+        }
+
+        .tag-list {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .tag-pill {
+            background-color: var(--color-sakura-light);
+            color: #d66c77;
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .tag-pill {
+            background-color: rgba(214, 108, 119, 0.15);
+        }
+
+        .stat-list {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-item.status {
+            color: #2c7a4b;
+            background-color: var(--color-matcha);
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .stat-item.status {
+            background-color: rgba(44, 122, 75, 0.2);
+            color: #4ade80;
+        }
+
+        .meta-list {
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .meta-item {
+            display: flex;
+            margin-bottom: 4px;
+        }
+
+        .meta-label {
+            font-weight: 700;
+            width: 100px;
+            flex-shrink: 0;
+            color: var(--text-primary);
+        }
+
+        .meta-value {
+            color: #8352a1; /* Purple tint based on image */
+        }
+
+        [data-theme="dark"] .meta-value {
+            color: #a87bc4;
+        }
+
+        .meta-value a {
+            color: inherit;
+            text-decoration: underline;
+            text-decoration-color: transparent;
+        }
+
+        .meta-value a:hover {
+            color: var(--accent);
+            text-decoration-color: var(--accent);
+        }
+        
+        .role-list {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: auto;
+        }
+
+        .btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: #d66c77; /* Deep sakura / magenta */
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #c05c66;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(214, 108, 119, 0.3);
+            color: white;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--color-sakura-light);
+            border-color: #d66c77;
+            color: #d66c77;
+        }
+
+        /* Tabs Section */
+        .tabs-container {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 1rem;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.6rem 1.5rem;
+            border-radius: var(--radius-pill);
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .tab-btn:hover {
+            background-color: var(--color-sakura-light);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            background-color: #8b3dff; /* Vivid Purple based on mockup */
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 61, 255, 0.2);
+        }
+
+        /* Chapters List */
+        .chapters-panel {
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            padding: 1.5rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-title {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            color: #8b3dff; /* matching active tab */
+            font-weight: 700;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .panel-actions button {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .panel-actions button:hover {
+            color: #8b3dff;
+            border-color: #8b3dff;
+            background-color: rgba(139, 61, 255, 0.05);
+        }
+
+        .chapter-list-wrap {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .chapter-list-wrap::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chapter-list-wrap::-webkit-scrollbar-thumb {
+            background-color: var(--color-border);
+            border-radius: var(--radius-pill);
+        }
+
+        .chapter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .chapter-item:hover {
+            background-color: var(--color-sakura-light);
+            border-color: var(--color-sakura);
+        }
+
+        [data-theme="dark"] .chapter-item:hover {
+            background-color: rgba(250, 218, 221, 0.05);
+        }
+
+        .chapter-info h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+            color: #8b3dff;
+            font-family: var(--font-body);
+        }
+
+        .chapter-info .group-name {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .chapter-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        @@media (max-width: 768px) {
+            .details-container {
+                padding: 1rem;
+            }
+            .manga-info-header {
+                flex-direction: column;
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }
+            .manga-cover {
+                flex: none;
+                width: 160px;
+                margin: 0 auto;
+            }
+            .manga-title {
+                text-align: center;
+                font-size: 1.5rem;
+                line-height: 1.3;
+            }
+            .tag-list, .stat-list {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .stat-list {
+                gap: 0.8rem;
+                font-size: 0.8rem;
+            }
+            .meta-list {
+                font-size: 0.85rem;
+            }
+            .meta-item {
+                flex-direction: column;
+                margin-bottom: 8px;
+            }
+            .meta-label {
+                width: auto;
+                margin-bottom: 2px;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .tabs-container {
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+                white-space: nowrap;
+                scrollbar-width: none;
+            }
+            .tabs-container::-webkit-scrollbar {
+                display: none;
+            }
+            .tab-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+            .chapters-panel {
+                padding: 1rem;
+            }
+        }
+    </style>
+}
+
+<div class="details-container">
+@if (story != null) {
+    <!-- INFO HEADER -->
+    <div class="manga-info-header">
+        <div class="manga-cover">
+            @if (!string.IsNullOrEmpty(story.CoverImage)) {
+                <img src="@story.CoverImage" alt="@story.Title" class="manga-cover-img" />
+            } else {
+                <div class="manga-cover-img" style="background: linear-gradient(135deg, var(--color-matcha), var(--color-sakura)); display: flex; align-items: center; justify-content: center; position: relative;">
+                     <span class="material-symbols-rounded" style="font-size: 64px; color: white; opacity: 0.7;">image</span>
+                </div>
+            }
+        </div>
+
+        <div class="manga-details">
+            <h1 class="manga-title">@story.Title</h1>
+
+            <div class="tag-list">
+                @if (story.StoryCategories != null && story.StoryCategories.Any(sc => !sc.Category.IsDeleted))
+                {
+                    foreach (var sc in story.StoryCategories.Where(sc => !sc.Category.IsDeleted))
+                    {
+                        <a href="/the-loai/@sc.Category.Slug" class="tag-pill" style="text-decoration:none;">@sc.Category.Name</a>
+                    }
+                }
+            </div>
+
+            <div class="stat-list">
+                <div class="stat-item status">
+                    <span class="material-symbols-rounded" style="font-size: 18px;">@(story.Status == "Ongoing" ? "sync" : "check_circle")</span>
+                    @(story.Status == "Ongoing" ? "Đang ra" : story.Status)
+                </div>
+                <div class="stat-item">
+                    <span class="material-symbols-rounded" style="font-size: 18px;">calendar_today</span>
+                    Cập nhật @story.CreatedAt.ToString("dd/MM/yyyy")
+                </div>
+                <div class="stat-item">
+                    <span class="material-symbols-rounded" style="font-size: 18px;">visibility</span>
+                    @story.ViewCount Lượt xem
+                </div>
+                <div class="stat-item">
+                    <span class="material-symbols-rounded" style="font-size: 18px;">star</span>
+                    @story.RatingAvg.ToString("0.0") Đánh giá
+                </div>
+            </div>
+
+            <div class="meta-list">
+                <div class="meta-item">
+                    <span class="meta-label">Tác giả:</span>
+                    <span class="meta-value">@(string.IsNullOrEmpty(story.Author) ? "Đang cập nhật" : story.Author)</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Mô tả:</span>
+                    <span class="meta-value" style="color: var(--text-secondary);">@story.Description</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                @if (story.Chapters != null && story.Chapters.Any(c => !c.IsDeleted))
+                {
+                    var firstChapter = story.Chapters.Where(c => !c.IsDeleted).OrderBy(c => c.ChapterNumber).FirstOrDefault();
+                    var latestChapter = story.Chapters.Where(c => !c.IsDeleted).OrderByDescending(c => c.ChapterNumber).FirstOrDefault();
+
+                    <a href="/truyen/@story.Slug/chuong/@(firstChapter?.ChapterNumber)" class="btn-action btn-primary" style="text-decoration: none;">
+                        <span class="material-symbols-rounded">menu_book</span>
+                        Đọc từ đầu
+                    </a>
+                    <a href="/truyen/@story.Slug/chuong/@(latestChapter?.ChapterNumber)" class="btn-action btn-outline" style="text-decoration: none;">
+                        <span class="material-symbols-rounded">import_contacts</span>
+                        Đọc mới nhất
+                    </a>
+                } else {
+                    <button class="btn-action btn-outline" disabled>
+                        <span class="material-symbols-rounded">block</span>
+                        Chưa có chương
+                    </button>
+                }
+                
+                <button class="btn-action btn-outline">
+                    <span class="material-symbols-rounded">bookmark_border</span>
+                    Lưu truyện
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABS AND CHAPTERS -->
+    <div class="tabs-container">
+        <button class="tab-btn active">
+            <span class="material-symbols-rounded">list</span> Chapters
+        </button>
+        <button class="tab-btn">
+            <span class="material-symbols-rounded">image</span> Arts
+        </button>
+        <button class="tab-btn">
+            <span class="material-symbols-rounded">chat_bubble_outline</span> Bình luận (0)
+        </button>
+        <button class="tab-btn">
+            <span class="material-symbols-rounded">category</span> Liên quan
+        </button>
+    </div>
+
+    <div class="chapters-panel">
+        <div class="panel-header">
+            <h3 class="panel-title">Tất cả chapters</h3>
+            <div class="panel-actions">
+                <button aria-label="Refresh"><span class="material-symbols-rounded">sync</span></button>
+                <button aria-label="Sort"><span class="material-symbols-rounded">sort</span></button>
+            </div>
+        </div>
+        
+        <div class="chapter-list-wrap">
+            @if (story.Chapters != null && story.Chapters.Any(c => !c.IsDeleted))
+            {
+                foreach (var chap in story.Chapters.Where(c => !c.IsDeleted).OrderByDescending(c => c.ChapterNumber))
+                {
+                    <a href="/truyen/@story.Slug/chuong/@chap.ChapterNumber" style="text-decoration:none; color:inherit;">
+                        <div class="chapter-item">
+                            <div class="chapter-info">
+                                <h4>Chương @chap.ChapterNumber @(!string.IsNullOrEmpty(chap.Title) ? "- " + chap.Title : "")</h4>
+                                <div class="group-name">
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">visibility</span>
+                                    @chap.ViewCount Lượt xem
+                                </div>
+                            </div>
+                            <div class="chapter-date">
+                                @chap.CreatedAt.ToString("dd/MM/yyyy")
+                            </div>
+                        </div>
+                    </a>
+                }
+            }
+            else
+            {
+                <div style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                    Truyện này hiện chưa có chương nào được cập nhật.
+                </div>
+            }
+        </div>
+    </div>
+} else {
+    <div style="padding: 100px 0; text-align: center;">
+        <span class="material-symbols-rounded" style="font-size: 64px; color: var(--text-secondary);">sentiment_dissatisfied</span>
+        <h2 style="color: var(--text-primary); margin-top: 20px;">Không tìm thấy truyện</h2>
+        <a href="/" class="btn-action btn-primary" style="text-decoration: none; display: inline-block; margin-top: 20px;">Về trang chủ</a>
+    </div>
+}
+</div>

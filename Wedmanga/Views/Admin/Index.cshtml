@@ -1,0 +1,146 @@
+@{
+    ViewData["Title"] = "Dashboard Tổng Quan";
+    Layout = "_AdminLayout";
+
+    var totalStories = ViewBag.TotalStories ?? 0;
+    var totalChapters = ViewBag.TotalChapters ?? 0;
+    var totalUsers = ViewBag.TotalUsers ?? 0;
+    var totalViewsToday = ViewBag.TotalViewsToday ?? 0;
+    var topStories = ViewBag.TopStories as IEnumerable<dynamic> ?? new List<dynamic>();
+}
+
+<!-- Thư viện biểu đồ nhẹ nhàng -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .kpi-card::after {
+        content: '';
+        position: absolute;
+        top: -20px; right: -20px;
+        width: 100px; height: 100px;
+        border-radius: 50%;
+        background: var(--kpi-color);
+        opacity: 0.1;
+        z-index: 0;
+    }
+
+    .kpi-icon {
+        width: 60px; height: 60px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 28px;
+        background: var(--kpi-bg);
+        color: var(--kpi-color);
+        z-index: 1;
+    }
+    
+    .kpi-content {
+        z-index: 1;
+    }
+
+    .kpi-val { font-family: var(--font-heading); font-size: 2.2rem; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); }
+    .kpi-label { color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .chart-container {
+        width: 100%; height: 320px;
+        position: relative;
+    }
+
+    @@media (max-width: 992px) {
+        .chart-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="kpi-grid">
+    <div class="admin-card kpi-card" style="--kpi-color: #2c7a4b; --kpi-bg: var(--color-matcha);">
+        <div class="kpi-icon">
+            <span class="material-symbols-rounded">menu_book</span>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-val">@totalStories</div>
+            <div class="kpi-label">Tổng Truyện</div>
+        </div>
+    </div>
+    <div class="admin-card kpi-card" style="--kpi-color: #d66c77; --kpi-bg: var(--color-sakura-light);">
+        <div class="kpi-icon">
+            <span class="material-symbols-rounded">auto_stories</span>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-val">@totalChapters</div>
+            <div class="kpi-label">Tổng Chương</div>
+        </div>
+    </div>
+    <div class="admin-card kpi-card" style="--kpi-color: #5b6acb; --kpi-bg: #eef0fa;">
+        <div class="kpi-icon">
+            <span class="material-symbols-rounded">group</span>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-val">@totalUsers</div>
+            <div class="kpi-label">Người Dùng</div>
+        </div>
+    </div>
+    <div class="admin-card kpi-card" style="--kpi-color: #d49800; --kpi-bg: #fff8e1;">
+        <div class="kpi-icon">
+            <span class="material-symbols-rounded">visibility</span>
+        </div>
+        <div class="kpi-content">
+            <div class="kpi-val">@totalViewsToday</div>
+            <div class="kpi-label">Lượt Xem (Tổng)</div>
+        </div>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="admin-card">
+        <h3 style="margin-top:0; margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.1rem;">Lượt xem theo ngày (7 ngày qua)</h3>
+        <div class="chart-container" style="display:flex; justify-content:center; align-items:center; color: var(--text-secondary);">
+            <!-- Biểu đồ tạm ẩn vì cần dữ liệu động phức tạp hơn -->
+            <p>Biểu đồ xem theo ngày đang được cập nhật...</p>
+        </div>
+    </div>
+    
+    <div class="admin-card">
+        <h3 style="margin-top:0; margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.1rem;">Truyện thịnh hành</h3>
+        
+        <!-- Thêm ds phụ -->
+        <div style="margin-top: 15px; font-size: 0.9rem; color: var(--text-primary);">
+            @{
+                int rk = 1;
+                foreach(var s in topStories)
+                {
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+                        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%;"><b>@rk.</b> @s.Title</span> 
+                        <b style="color:var(--color-matcha-dark);">@s.ViewCount views</b>
+                    </div>
+                    rk++;
+                }
+                if (rk == 1)
+                {
+                    <p style="color:var(--text-secondary);">Chưa có truyện nào có lượt xem.</p>
+                }
+            }
+        </div>
+    </div>
+</div>

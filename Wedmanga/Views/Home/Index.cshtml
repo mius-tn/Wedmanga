@@ -1,0 +1,817 @@
+@{
+    ViewData["Title"] = "Trang chủ";
+}
+
+@section Scripts {
+    <style>
+        /* Homepage Specific Styles */
+        .hero-section {
+            background: linear-gradient(135deg, var(--color-sakura-light) 0%, var(--color-matcha) 100%);
+            border-radius: var(--radius-lg);
+            padding: 3rem 2rem;
+            margin-bottom: 3rem;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFFFFF' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            color: var(--color-indigo);
+            margin-bottom: 1rem;
+        }
+
+        [data-theme="dark"] .hero-title {
+            color: var(--color-white);
+        }
+
+        [data-theme="dark"] .hero-section {
+            background: linear-gradient(135deg, #3f2b31 0%, #2c3b32 100%);
+        }
+
+        [data-theme="dark"] .hero-section::before {
+            opacity: 0.1;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--color-sakura);
+            padding-bottom: 0.5rem;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .manga-scroll {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 1.5rem; /* Allow space for shadow and scrollbar */
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Custom scrollbar for horizontal lists */
+        .manga-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .manga-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .manga-scroll::-webkit-scrollbar-thumb {
+            background-color: var(--color-border);
+            border-radius: var(--radius-pill);
+        }
+        .manga-scroll:hover::-webkit-scrollbar-thumb {
+            background-color: var(--color-sakura);
+        }
+
+        .manga-card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition-smooth);
+            cursor: pointer;
+            position: relative;
+            flex: 0 0 220px; /* Fixed width for horizontal scrolling */
+            scroll-snap-align: start;
+        }
+
+        .manga-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-image-wrap {
+            position: relative;
+            padding-top: 140%; /* Aspect ratio for cover */
+            overflow: hidden;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            background-color: var(--color-sakura-light);
+        }
+
+        .card-image-wrap img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition-smooth);
+        }
+
+        .manga-card:hover .card-image-wrap img {
+            transform: scale(1.05);
+        }
+
+        .card-content {
+            padding: 1.25rem;
+        }
+
+        .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .tag {
+            background-color: var(--color-sakura-light);
+            color: #d66c77;
+            padding: 2px 8px;
+            border-radius: var(--radius-pill);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .tag {
+            background-color: rgba(250, 218, 221, 0.1);
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #f39c12;
+            font-weight: 600;
+        }
+
+        .rating .material-symbols-rounded {
+            font-size: 16px;
+        }
+
+        /* NEW: Grid Layout & Sidebar */
+        .main-grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px; /* 1 phần lớn, 1 sidebar nhỏ */
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .manga-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .manga-grid .manga-card {
+            flex: unset;
+        }
+
+        .trending-sidebar {
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+        }
+        [data-theme="dark"] .trending-sidebar {
+            background: #1c1c1e;
+        }
+        
+        .trending-header {
+            background: #f12566;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+        
+        .trending-sub-header {
+            display: flex;
+            background: #f1f1f1;
+        }
+        [data-theme="dark"] .trending-sub-header {
+            background: #161618;
+        }
+        .trending-btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .trending-btn span {
+            color: #f12566;
+        }
+        .trending-btn.active {
+            background: var(--bg-surface);
+            color: #333;
+        }
+        [data-theme="dark"] .trending-btn.active {
+            background: #1c1c1e;
+            color: white;
+        }
+        
+        .trending-tabs {
+            display: flex;
+            background: #f1f1f1;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0;
+        }
+        [data-theme="dark"] .trending-tabs {
+            background: #161618;
+        }
+        .trending-tabs span {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            cursor: pointer;
+            color: #f12566;
+        }
+        .trending-tabs span.active {
+            color: #f59e0b;
+            border-bottom: 2px solid #f59e0b;
+        }
+        
+        .trending-list {
+            list-style: none;
+            padding: 0; margin: 0;
+        }
+        
+        .trending-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            gap: 16px;
+        }
+        [data-theme="dark"] .trending-item {
+            border-bottom: 1px solid #2a2a35;
+        }
+        
+        .trending-rank {
+            font-size: 2rem;
+            font-weight: 900;
+            width: 24px;
+            text-align: center;
+            font-family: 'Arial Black', sans-serif;
+        }
+        .rank-1 { color: #f12566; }
+        .rank-2 { color: #8aacc8; }
+        .rank-3 { color: #6a7c8c; }
+        .rank-4, .rank-5, .rank-6 { color: #4a5a6a; }
+        
+        .trending-item-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+        
+        .trending-item-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .trending-item-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #5b6ebb;
+        }
+        [data-theme="dark"] .trending-item-title {
+            color: #a5b4fc;
+        }
+        
+        .trending-view-count {
+            color: #475569;
+            font-weight: 600;
+        }
+        [data-theme="dark"] .trending-view-count {
+            color: #e2e8f0;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+            gap: 5px;
+        }
+
+        .page-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+        }
+
+        .page-link:hover {
+            background: var(--color-sakura-light);
+            color: #d66c77;
+            border-color: #d66c77;
+        }
+
+        .page-link.active {
+            background: #f15b8d;
+            color: white;
+            border-color: #f15b8d;
+        }
+
+        .layout-btn {
+            transition: var(--transition-smooth);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .layout-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        /* List Mode Styles */
+        .manga-grid.list-mode {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .manga-grid.list-mode .manga-card {
+            display: flex;
+            flex-direction: row;
+            height: 100px;
+            width: 100% !important;
+            max-width: 100% !important;
+            align-items: center;
+        }
+
+        .manga-grid.list-mode .card-image-wrap {
+            width: 70px;
+            height: 100%;
+            padding-top: 0;
+            flex-shrink: 0;
+            border-radius: var(--radius-md) 0 0 var(--radius-md);
+        }
+
+        .manga-grid.list-mode .card-image-wrap img {
+            height: 100%;
+            width: 100%;
+            position: static;
+        }
+
+        .manga-grid.list-mode .card-content {
+            padding: 10px 15px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .manga-grid.list-mode .card-title {
+            font-size: 1rem;
+            margin-bottom: 6px;
+            -webkit-line-clamp: 1;
+        }
+
+        .manga-grid.list-mode .card-meta {
+            font-size: 0.85rem;
+        }
+
+        @@media (max-width: 1024px) {
+            html, body {
+                max-width: 100%;
+                overflow-x: hidden !important;
+            }
+            .container-custom {
+                max-width: 100%;
+                box-sizing: border-box;
+                padding: 0.5rem !important; /* Thu nhỏ padding ngoài để tăng diện tích hiển thị */
+            }
+            .manga-card {
+                flex: 0 0 110px; /* Nhỏ gọn hơn trên mobile để thấy nhiều hơn */
+            }
+            .hero-section {
+                padding: 1.5rem 1rem;
+                margin-bottom: 1.5rem;
+            }
+            .hero-title {
+                font-size: 1.5rem;
+            }
+            .card-title {
+                font-size: 0.8rem !important;
+            }
+            .card-content {
+                padding: 8px !important;
+            }
+            .card-meta {
+                font-size: 0.6rem !important;
+                flex-wrap: nowrap;
+                gap: 2px;
+            }
+            .card-meta > span {
+                white-space: nowrap;
+            }
+            .tag {
+                font-size: 0.5rem !important;
+                padding: 1px 3px;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
+            }
+            .rating {
+                font-size: 0.65rem !important;
+            }
+            .rating .material-symbols-rounded {
+                font-size: 10px !important;
+            }
+            .section-title {
+                font-size: 1.1rem !important;
+            }
+            .manga-scroll {
+                gap: 0.75rem; /* Giảm gap trên mobile */
+                padding-bottom: 0.75rem;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            .icon-btn.scroll-btn {
+                display: none; /* Ẩn nút mũi tên trên mobile vì user ngón tay vuốt dễ hơn */
+            }
+            .main-grid-layout {
+                display: grid;
+                grid-template-columns: 54% 46%; /* Hiển thị song song trên mobile: 54% cho lưới trái, 46% cho xu hướng phải */
+                gap: 8px;
+            }
+            .manga-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* Giảm kích thước minmax để card truyện nhỏ hơn */
+                gap: 8px;
+            }
+            .manga-grid .manga-card {
+                width: 110px !important;
+                max-width: 110px !important;
+            }
+            .trending-sidebar {
+                border-radius: var(--radius-sm);
+            }
+            .trending-header {
+                padding: 8px 10px !important;
+                font-size: 0.9rem !important;
+            }
+             .trending-btn {
+                padding: 6px !important;
+                font-size: 0.75rem !important;
+                gap: 4px !important;
+            }
+            .trending-btn span {
+                font-size: 14px !important;
+            }
+            .trending-tabs {
+                font-size: 0.75rem !important;
+            }
+            .trending-tabs span {
+                padding: 8px 0 !important;
+            }
+            .trending-item {
+                padding: 8px !important;
+                gap: 6px !important;
+            }
+            .trending-rank {
+                font-size: 1.2rem !important;
+                width: 15px !important;
+            }
+            .trending-item-img {
+                width: 35px !important;
+                height: 45px !important;
+                border-radius: 4px !important;
+            }
+            .trending-item-title {
+                font-size: 0.75rem !important;
+            }
+            .trending-view-count {
+                font-size: 0.7rem !important;
+            }
+
+            /* List Mode on Mobile */
+            .manga-grid.list-mode {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .manga-grid.list-mode .manga-card {
+                height: 80px;
+                border-radius: var(--radius-sm);
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .manga-grid.list-mode .card-image-wrap {
+                width: 55px;
+                border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+            }
+            .manga-grid.list-mode .card-content {
+                padding: 6px 10px !important;
+            }
+            .manga-grid.list-mode .card-title {
+                font-size: 0.8rem !important;
+                margin-bottom: 4px;
+            }
+            .manga-grid.list-mode .card-meta {
+                font-size: 0.65rem !important;
+            }
+        }
+    </style>
+
+    <script>
+        function switchToGridView() {
+            const mangaGrid = document.querySelector('.manga-grid');
+            const btnGridView = document.getElementById('btnGridView');
+            const btnListView = document.getElementById('btnListView');
+
+            if (mangaGrid && btnGridView && btnListView) {
+                mangaGrid.classList.remove('list-mode');
+                
+                // Update active state
+                btnGridView.style.background = '#f15b8d';
+                btnGridView.style.color = 'white';
+                
+                btnListView.style.background = 'var(--bg-surface)';
+                btnListView.style.color = 'var(--text-primary)';
+            }
+        }
+
+        function switchToListView() {
+            const mangaGrid = document.querySelector('.manga-grid');
+            const btnGridView = document.getElementById('btnGridView');
+            const btnListView = document.getElementById('btnListView');
+
+            if (mangaGrid && btnGridView && btnListView) {
+                mangaGrid.classList.add('list-mode');
+                
+                // Update active state
+                btnListView.style.background = '#f15b8d';
+                btnListView.style.color = 'white';
+                
+                btnGridView.style.background = 'var(--bg-surface)';
+                btnGridView.style.color = 'var(--text-primary)';
+            }
+        }
+    </script>
+}
+
+<div class="container-custom">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title font-japanese">Thế Giới Truyện Tranh Tinh Tế</h1>
+            <p style="color: var(--text-primary); opacity: 0.8; font-size: 1rem; max-width: 600px; margin: 0 auto;">
+                Trải nghiệm không gian đọc truyện mang phong cách Wabi-sabi thanh tịnh, nơi từng trang sách giữ trọn vẹn cảm xúc.
+            </p>
+        </div>
+    </section>
+
+    <!-- Truyện Đề Cử -->
+    <div class="section-header">
+        <h2 class="section-title">
+            <span class="material-symbols-rounded" style="color: var(--color-sakura); font-size: 1.2em;">auto_awesome</span>
+            Truyện Đề Cử
+        </h2>
+        <a href="/The-Loai-Truyen/Manga" style="font-size: 0.85rem; font-weight: 600; display: flex; align-items: center;">Xem thêm <span class="material-symbols-rounded" style="font-size: 16px">chevron_right</span></a>
+    </div>
+
+    <div class="manga-scroll" id="scrollDecu">
+        @if (ViewBag.HotStories != null) {
+            foreach (var s in (IEnumerable<Wedmanga.Models.Entities.Story>)ViewBag.HotStories)
+            {
+                <a href="/truyen/@s.Slug" class="manga-card" style="text-decoration:none">
+                    <div class="card-image-wrap">
+                        @if (!string.IsNullOrEmpty(s.CoverImage)) {
+                            <img src="@s.CoverImage" alt="@s.Title" />
+                        } else {
+                            <div style="width: 100%; height: 100%; position: absolute; top:0; left:0; background: linear-gradient(45deg, var(--color-sakura), var(--color-matcha)); display:flex; align-items:center; justify-content:center; color: white;">
+                                <span class="material-symbols-rounded" style="font-size: 48px; opacity: 0.5;">photo_library</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">@s.Title</h3>
+                        <div class="card-meta" style="margin-bottom: 8px;">
+                            <span>Tác giả: @(string.IsNullOrEmpty(s.Author) ? "Chưa rõ" : s.Author)</span>
+                        </div>
+                        <div class="card-meta">
+                            <span class="tag">@s.ViewCount lượt xem</span>
+                            <div class="rating">
+                                <span class="material-symbols-rounded mt-1">star</span> @s.RatingAvg
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            }
+        }
+    </div>
+
+    <!-- Mới Cập Nhật -->
+    <div class="section-header" style="margin-top: 1rem;">
+        <h2 class="section-title">
+            <span class="material-symbols-rounded" style="color: var(--color-matcha); font-size: 1.2em;">update</span>
+            Mới Cập Nhật
+        </h2>
+    </div>
+
+    <div class="manga-scroll" id="scrollUpdate">
+        @if (ViewBag.NewStories != null) {
+            foreach (var s in (IEnumerable<Wedmanga.Models.Entities.Story>)ViewBag.NewStories)
+            {
+                <a href="/truyen/@s.Slug" class="manga-card" style="text-decoration:none">
+                    <div class="card-image-wrap">
+                        @if (!string.IsNullOrEmpty(s.CoverImage)) {
+                            <img src="@s.CoverImage" alt="@s.Title" />
+                        } else {
+                            <div style="width: 100%; height: 100%; position: absolute; top:0; left:0; background: linear-gradient(45deg, var(--color-cream), #e0d5c1); display:flex; align-items:center; justify-content:center; color: var(--text-secondary);">
+                                <span class="material-symbols-rounded" style="font-size: 48px; opacity: 0.5;">book</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">@s.Title</h3>
+                        <div class="card-meta" style="margin-bottom: 8px;">
+                            <span>Trạng thái: @(s.Status == "Ongoing" ? "Đang ra" : s.Status)</span>
+                        </div>
+                        <div class="card-meta">
+                            <span class="tag" style="background-color: var(--color-matcha); color: #2c7a4b;">Mới Cập Nhật</span>
+                            <span>@s.CreatedAt.ToString("dd/MM/yyyy")</span>
+                        </div>
+                    </div>
+                </a>
+            }
+        }
+    </div>
+
+    <!-- MAIN GRID & SIDEBAR SECTION -->
+    <div class="main-grid-layout" id="manga-grid-section">
+        <!-- Cột Trái: Grid Truyện -->
+        <div class="grid-content">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span style="color: #f15b8d;">Mới cập nhật (Lưới)</span>
+                </h2>
+                <div style="display: flex; gap: 8px;">
+                    <button class="icon-btn layout-btn active" id="btnGridView" onclick="switchToGridView()" title="Hiện thị dạng lưới (Dọc)" style="width: 32px; height: 32px; background: #f15b8d; color: white;">
+                        <span class="material-symbols-rounded">grid_view</span>
+                    </button>
+                    <button class="icon-btn layout-btn" id="btnListView" onclick="switchToListView()" title="Hiển thị dạng danh sách (Ngang)" style="width: 32px; height: 32px; background: var(--bg-surface);">
+                        <span class="material-symbols-rounded">list</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="manga-grid">
+                @if (ViewBag.PagedStories != null) {
+                    foreach (var s in (IEnumerable<Wedmanga.Models.Entities.Story>)ViewBag.PagedStories)
+                    {
+                        var latestChapter = s.Chapters.FirstOrDefault();
+                        <a href="/truyen/@s.Slug" class="manga-card" style="text-decoration:none">
+                            <div class="card-image-wrap">
+                                @if (!string.IsNullOrEmpty(s.CoverImage)) {
+                                    <img src="@s.CoverImage" alt="@s.Title" />
+                                } else {
+                                    <div style="width: 100%; height: 100%; position: absolute; top:0; left:0; background: linear-gradient(45deg, var(--color-cream), #e0d5c1); display:flex; align-items:center; justify-content:center; color: var(--text-secondary);">
+                                        <span class="material-symbols-rounded" style="font-size: 48px; opacity: 0.5;">book</span>
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title" style="color: #6a8caf;">@s.Title</h3>
+                                <div class="card-meta" style="margin-bottom: 8px; color: #8e94b6;">
+                                    <span>Chapter @(latestChapter?.ChapterNumber.ToString() ?? "?") - @(latestChapter?.Title ?? "Mới nhất")</span>
+                                </div>
+                                <div class="card-meta">
+                                    <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:16px">menu_book</span> @s.Chapters.Count</span>
+                                    <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:16px">visibility</span> @(s.ViewCount >= 1000 ? (s.ViewCount/1000.0).ToString("0.1") + "K" : s.ViewCount.ToString())</span>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                }
+            </div>
+
+            <!-- Phân Trang -->
+            @if(ViewBag.TotalPages > 1) {
+                <div class="pagination-container">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        if (i == ViewBag.CurrentPage) {
+                            <span class="page-link active">@i</span>
+                        } else {
+                            <a href="/?page=@i#manga-grid-section" class="page-link">@i</a>
+                        }
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Cột Phải: Sidebar Xu Hướng -->
+        <div class="trending-sidebar">
+            <div class="trending-header">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size: 20px;">🏆</span> Xu hướng
+                </span>
+                <span class="material-symbols-rounded" style="cursor:pointer; font-size:18px;">refresh</span>
+            </div>
+            
+            <div class="trending-sub-header">
+                <div class="trending-btn active">
+                    <span class="material-symbols-rounded" style="font-size: 16px;">menu_book</span>
+                    Lượt xem
+                </div>
+                <div class="trending-btn" style="color: #f12566;">
+                    <span class="material-symbols-rounded" style="font-size: 16px;">local_fire_department</span>
+                    Nhóm dịch
+                </div>
+            </div>
+
+            <div class="trending-tabs">
+                <span class="active">Ngày</span>
+                <span>Tuần</span>
+                <span>Tháng</span>
+                <span>Năm</span>
+            </div>
+            
+            <ul class="trending-list">
+                @{int rank = 1;}
+                @if(ViewBag.TrendingTop5 != null) {
+                    foreach(var st in (IEnumerable<Wedmanga.Models.Entities.Story>)ViewBag.TrendingTop5) {
+                        <li class="trending-item">
+                            <div class="trending-rank rank-@rank">@rank</div>
+                            <a href="/truyen/@st.Slug">
+                                @if(!string.IsNullOrEmpty(st.CoverImage)){
+                                    <img src="@st.CoverImage" alt="@st.Title" class="trending-item-img"/>
+                                } else {
+                                    <div class="trending-item-img" style="background:var(--color-cream); display:flex; align-items:center; justify-content:center;">
+                                        <span class="material-symbols-rounded" style="opacity:0.5;">book</span>
+                                    </div>
+                                }
+                            </a>
+                            <div class="trending-item-info">
+                                <a href="/truyen/@st.Slug" style="text-decoration:none;"><h4 class="trending-item-title">@st.Title</h4></a>
+                                <div style="font-size:0.75rem; display:flex; align-items:center; gap:4px; margin-top:4px;">
+                                    <span class="material-symbols-rounded" style="font-size:14px; color:#6ca6d1;">visibility</span>
+                                    <span class="trending-view-count">@(st.ViewCount >= 1000 ? (st.ViewCount/1000.0).ToString("0.1") + "K" : st.ViewCount.ToString())</span>
+                                    <span style="color: #f59e0b; font-size: 0.7rem;">Lượt xem</span>
+                                </div>
+                            </div>
+                        </li>
+                        rank++;
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+</div>

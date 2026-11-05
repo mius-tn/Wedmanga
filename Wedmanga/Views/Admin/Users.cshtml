@@ -1,0 +1,136 @@
+@{
+    ViewData["Title"] = "Quản Lý Người Dùng";
+    Layout = "_AdminLayout";
+    var users = ViewBag.Users as IEnumerable<dynamic>;
+    var search = ViewBag.Search as string;
+    var roles = ViewBag.Roles as IEnumerable<string>;
+    var roleFilter = ViewBag.RoleFilter as string;
+    var currentPage = ViewBag.CurrentPage != null ? (int)ViewBag.CurrentPage : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+}
+
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; font-size: 1.25rem;">Danh Sách Tài Khoản</h3>
+        
+        <div style="display: flex; gap: 10px;">
+            <form method="get" action="/Admin/Users" style="display: flex; gap: 10px;">
+                <select name="role" class="admin-input" style="width: auto; padding: 5px; height: 35px;" onchange="this.form.submit()">
+                    <option value="">Tất cả vai trò</option>
+                    @if(roles != null)
+                    {
+                        foreach(var r in roles)
+                        {
+                            <option value="@r" selected="@(roleFilter == r)">@r</option>
+                        }
+                    }
+                </select>
+                <div class="search-bar" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 5px 15px; display:flex; align-items:center; height:35px; box-sizing:border-box;">
+                    <span class="material-symbols-rounded" style="color:var(--text-secondary); font-size: 20px;">search</span>
+                    <input type="text" name="search" value="@search" placeholder="Tìm theo Username, Email..." style="border:none;background:transparent;outline:none; width: 250px; color:var(--text-primary); margin-left: 8px;">
+                </div>
+            </form>
+            
+            <a asp-controller="Admin" asp-action="Roles" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--color-matcha); color: #2c7a4b; text-decoration:none; height:35px; box-sizing:border-box; display:flex; align-items:center;">
+                <span class="material-symbols-rounded">admin_panel_settings</span> Phân Quyền
+            </a>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Nhóm Quyền</th>
+                    <th>Trạng Thái</th>
+                    <th>Ngày ĐK</th>
+                    <th style="text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(users != null && users.Any())
+                {
+                    foreach (var u in users)
+                    {
+                        <tr>
+                            <td style="color: var(--text-secondary);">#@u.UserId</td>
+                            <td>
+                                <div style="display:flex; align-items:center; gap: 10px;">
+                                    <img src="@(u.Avatar ?? "/images/default-avatar.png")" alt="Ava" style="width:35px; height:35px; border-radius:50%; border: 1px solid var(--border-color); object-fit:cover;">
+                                    <span style="font-weight: 600; color: var(--text-primary);">@u.Username</span>
+                                </div>
+                            </td>
+                            <td style="color: var(--text-secondary);">@u.Email</td>
+                            <td>
+                                @if(u.RoleName == "Admin") {
+                                    <span class="status-badge" style="background: rgba(139, 61, 255, 0.1); color: #8b3dff;">Admin</span>
+                                } else if(u.RoleName == "Moderator") {
+                                    <span class="status-badge" style="background: rgba(255, 152, 0, 0.1); color: #e65100;">Moderator</span>
+                                } else {
+                                    <span class="status-badge" style="background: var(--color-sakura-light); color: var(--accent); border: 1px solid rgba(250, 218, 221, 0.5);">User</span>
+                                }
+                            </td>
+                            <td>
+                                @if(u.Status == "Active") {
+                                    <span class="status-badge status-active">Hoạt động</span>
+                                } else {
+                                    <span class="status-badge status-banned">Khóa</span>
+                                }
+                            </td>
+                            <td style="color: var(--text-secondary);">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
+                            <td class="action-cell">
+                                <a href="#" class="icon-btn" title="Đổi Quyền" style="color: var(--color-matcha);"><span class="material-symbols-rounded">manage_accounts</span></a>
+                                @if(u.Status == "Active") {
+                                    <form asp-controller="Admin" asp-action="UpdateUserStatus" method="post" style="display:inline;" onsubmit="return confirm('Bạn muốn khóa tài khoản này?');">
+                                        <input type="hidden" name="userId" value="@u.UserId" />
+                                        <input type="hidden" name="status" value="Banned" />
+                                        <button type="submit" class="icon-btn" title="Khóa" style="color: #ff4d4f; border:none; background:transparent; cursor:pointer;"><span class="material-symbols-rounded">block</span></button>
+                                    </form>
+                                } else {
+                                    <form asp-controller="Admin" asp-action="UpdateUserStatus" method="post" style="display:inline;" onsubmit="return confirm('Bạn muốn mở khóa tài khoản này?');">
+                                        <input type="hidden" name="userId" value="@u.UserId" />
+                                        <input type="hidden" name="status" value="Active" />
+                                        <button type="submit" class="icon-btn" title="Mở Khóa" style="color: #2c7a4b; border:none; background:transparent; cursor:pointer;"><span class="material-symbols-rounded">settings_backup_restore</span></button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="7" style="text-align:center; color: var(--text-secondary);">Không tìm thấy user nào</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if(totalPages > 1)
+    {
+        <!-- Pagination -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="font-size: 0.9rem; color: var(--text-secondary);">Trang @currentPage / @totalPages</div>
+            <div style="display: flex; gap: 5px;">
+                @if(currentPage > 1) {
+                    <a asp-controller="Admin" asp-action="Users" asp-route-page="@(currentPage-1)" asp-route-search="@search" asp-route-role="@roleFilter" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_left</span></a>
+                }
+                
+                @for(int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                {
+                    if(i == currentPage) {
+                        <span class="admin-btn" style="background: var(--color-matcha); color: #2c7a4b; border: 1px solid var(--color-matcha); padding: 5px 15px;">@i</span>
+                    } else {
+                        <a asp-controller="Admin" asp-action="Users" asp-route-page="@i" asp-route-search="@search" asp-route-role="@roleFilter" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 15px; color: var(--text-secondary); text-decoration:none;">@i</a>
+                    }
+                }
+
+                @if(currentPage < totalPages) {
+                    <a asp-controller="Admin" asp-action="Users" asp-route-page="@(currentPage+1)" asp-route-search="@search" asp-route-role="@roleFilter" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_right</span></a>
+                }
+            </div>
+        </div>
+    }
+</div>

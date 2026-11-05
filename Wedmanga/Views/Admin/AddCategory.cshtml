@@ -1,0 +1,39 @@
+@{
+    ViewData["Title"] = "Thêm Thể Loại Mới";
+    Layout = "_AdminLayout";
+}
+
+<div class="admin-card" style="max-width: 600px; margin: 0 auto; padding: 2rem;">
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem;">
+        <a href="/Admin/Categories" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none; display: flex; align-items: center; gap: 5px;" title="Quay lại">
+            <span class="material-symbols-rounded" style="font-size: 18px;">arrow_back</span>
+        </a>
+        <h3 style="margin: 0; font-size: 1.5rem;">Thêm Thể Loại Mới</h3>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div style="background-color: #ffe6e6; color: #ff4d4f; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div asp-validation-summary="All"></div>
+        </div>
+    }
+
+    <form asp-controller="Admin" asp-action="AddCategory" method="post">
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display:block; font-weight:600; margin-bottom:8px; color:var(--text-primary);">Tên thể loại <span style="color:#ff4d4f;">*</span></label>
+            <input type="text" name="name" class="admin-input" required placeholder="VD: Hành Động, Tình Cảm..." style="width:100%; padding: 12px 15px;">
+        </div>
+        
+        <div style="margin-bottom: 2rem;">
+            <label style="display:block; font-weight:600; margin-bottom:8px; color:var(--text-primary);">Mô tả (tùy chọn)</label>
+            <textarea name="description" class="admin-input" placeholder="Mô tả ngắn gọn về thể loại này..." rows="4" style="width:100%; padding: 12px 15px; resize: vertical;"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content: flex-end; gap: 15px; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <a href="/Admin/Categories" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-primary); text-decoration: none; padding: 10px 20px;">Hủy Bỏ</a>
+            <button type="submit" class="admin-btn btn-primary" style="background-color: var(--color-matcha); color: #2c7a4b; padding: 10px 24px; font-size: 1rem;">
+                <span class="material-symbols-rounded">save</span> Mới Thể Loại
+            </button>
+        </div>
+    </form>
+</div>

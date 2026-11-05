@@ -1,0 +1,638 @@
+@{
+    ViewData["Title"] = "Hồ Sơ Của Tôi";
+}
+
+@section Scripts {
+    <style>
+        .profile-container {
+            padding: 2rem 0;
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+
+        /* --- Sidebar --- */
+        .profile-sidebar {
+            width: 280px;
+            background-color: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-soft);
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .user-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--color-sakura-light);
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(250, 218, 221, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .user-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .side-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            text-align: left;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        .nav-btn .material-symbols-rounded {
+            font-size: 22px;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--color-sakura-light);
+            color: var(--accent);
+        }
+
+        .nav-btn.active {
+            background-color: var(--color-sakura);
+            color: white;
+            box-shadow: 0 4px 12px rgba(250, 218, 221, 0.4);
+        }
+
+        /* --- Main Content --- */
+        .profile-content {
+            flex: 1;
+            background-color: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            min-height: 500px;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Lịch sử đọc (Timeline Layout) */
+        .history-list {
+            position: relative;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .history-list::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--color-border);
+        }
+
+        .history-card {
+            position: relative;
+            display: flex;
+            gap: 1.5rem;
+            background: var(--bg-color); /* Nền tổng website */
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .history-card:hover {
+            transform: translateX(5px);
+            border-color: var(--color-sakura-light);
+        }
+
+        .history-card::before {
+            content: '';
+            position: absolute;
+            left: -25px; /* Vị trí dấu chấm timeline */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--color-sakura);
+            border: 2px solid var(--bg-surface);
+        }
+
+        .history-img {
+            width: 70px;
+            height: 100px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background-color: var(--color-border);
+            border-radius: 3px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-matcha);
+            border-radius: 3px;
+        }
+
+        .btn-continue {
+            padding: 6px 16px;
+            background-color: var(--color-sakura);
+            color: white;
+            border: none;
+            border-radius: var(--radius-pill);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: 0.2s;
+        }
+
+        .btn-continue:hover {
+            background-color: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        /* Notifications */
+        .noti-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .noti-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            background: var(--bg-color);
+            transition: 0.2s;
+        }
+
+        .noti-card.unread {
+            border-color: var(--color-sakura-light);
+            background: rgba(250, 218, 221, 0.1);
+        }
+
+        .noti-card:hover {
+            background: var(--bg-surface);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .noti-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--color-sakura-light);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .noti-content {
+            flex: 1;
+        }
+
+        .noti-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .noti-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Settings */
+        .setting-group {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .setting-group:last-child {
+            border-bottom: none;
+        }
+
+        .setting-title {
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--color-border);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--color-sakura);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            color: #ff4d4f;
+            border: 1px solid #ff4d4f;
+            padding: 8px 16px;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-danger:hover {
+            background-color: #ff4d4f;
+            color: white;
+        }
+
+        /* Mobile */
+        @@media (max-width: 768px) {
+            .profile-container {
+                flex-direction: column;
+            }
+            .profile-sidebar {
+                width: 100%;
+                padding: 1rem;
+            }
+            .user-info {
+                margin-bottom: 1rem;
+                padding-bottom: 1rem;
+            }
+            .side-nav {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+                gap: 1rem;
+                scrollbar-width: none;
+            }
+            .side-nav::-webkit-scrollbar {
+                display: none;
+            }
+            .nav-btn {
+                white-space: nowrap;
+                padding: 8px 12px;
+                border: 1px solid var(--color-border);
+            }
+            .nav-btn.active {
+                border-color: var(--color-sakura);
+            }
+            .profile-content {
+                width: 100%;
+                padding: 1.5rem 1rem;
+            }
+            .history-card {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1rem;
+                padding-left: 20px;
+            }
+            .history-card::before {
+                left: -20px;
+            }
+            .history-img {
+                width: 100%;
+                height: 120px;
+                object-fit: cover;
+                border-radius: var(--radius-sm);
+                margin-bottom: 0.5rem;
+            }
+            .btn-continue {
+                width: 100%;
+                text-align: center;
+                margin-top: 0.5rem;
+            }
+            .setting-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .setting-row button {
+                width: 100%;
+            }
+        }
+    </style>
+}
+
+<div class="container-custom profile-container">
+    
+    <!-- SIDEBAR -->
+    <aside class="profile-sidebar">
+        <div class="user-info">
+            <img src="https://via.placeholder.com/100" alt="Avatar" class="user-avatar">
+            <h2 class="user-name">Người Dùng Ẩn Danh</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Thành viên từ 2024</p>
+            
+            <div class="user-stats">
+                <div class="stat-item">
+                    <span class="stat-value">124</span>
+                    <span class="stat-label">Đã đọc</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">38</span>
+                    <span class="stat-label">Đang theo dõi</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="side-nav">
+            <button class="nav-btn active" onclick="switchTab('bookmark')">
+                <span class="material-symbols-rounded">bookmark</span> Bookmark của tôi
+            </button>
+            <button class="nav-btn" onclick="switchTab('history')">
+                <span class="material-symbols-rounded">history</span> Lịch sử đọc
+            </button>
+            <button class="nav-btn" onclick="switchTab('noti')">
+                <span class="material-symbols-rounded">notifications</span> Thông báo <span style="background: var(--color-sakura); color: white; border-radius: 10px; padding: 2px 6px; font-size: 10px; margin-left: auto;">3</span>
+            </button>
+            <button class="nav-btn" onclick="switchTab('settings')">
+                <span class="material-symbols-rounded">settings</span> Cài đặt tài khoản
+            </button>
+            <form asp-controller="Account" asp-action="Logout" method="post" style="margin-top: 1rem; width: 100%;">
+                <button type="submit" class="nav-btn" style="color: #ff4d4f; width: 100%;">
+                    <span class="material-symbols-rounded">logout</span> Đăng xuất
+                </button>
+            </form>
+        </nav>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="profile-content">
+        
+        <!-- PANE: BOOKMARK (Demo) -->
+        <div id="tab-bookmark" class="tab-pane active">
+            <h2 class="section-title"><span class="material-symbols-rounded" style="color: var(--color-sakura);">bookmark</span> Truyện đang theo dõi</h2>
+            <p style="color: var(--text-secondary);">Bạn chưa có truyện nào trong danh sách. Hãy khám phá thêm nhé!</p>
+            <a asp-controller="Home" asp-action="Index" style="display: inline-block; padding: 10px 20px; background: var(--color-sakura); color: white; border-radius: 20px; text-decoration: none; font-weight: 600; margin-top: 1rem;">Khám phá ngay</a>
+        </div>
+
+        <!-- PANE: HISTORY -->
+        <div id="tab-history" class="tab-pane">
+            <h2 class="section-title"><span class="material-symbols-rounded" style="color: var(--color-sakura);">history</span> Lịch sử đọc gần đây</h2>
+            
+            <div class="history-list">
+                <div class="history-card">
+                    <img src="https://via.placeholder.com/70x100" class="history-img" alt="Bìa">
+                    <div class="history-info">
+                        <div class="history-title">Chuyện tình của tôi và cô ấy</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Đã đọc đến: Chương 12 (45%)</div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-fill" style="width: 45%;"></div>
+                        </div>
+                    </div>
+                    <a href="/truyen/demo-slug/chuong/1" class="btn-continue">Đọc tiếp</a>
+                </div>
+
+                <div class="history-card">
+                    <img src="https://via.placeholder.com/70x100" class="history-img" alt="Bìa">
+                    <div class="history-info">
+                        <div class="history-title">Cuộc sống mới nơi dị giới</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Đã đọc đến: Chương 45 (100%)</div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-fill" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <a href="/truyen/demo-slug/chuong/1" class="btn-continue" style="background-color: var(--color-matcha); color: var(--text-primary);">Đọc lại</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANE: NOTIFICATION -->
+        <div id="tab-noti" class="tab-pane">
+            <h2 class="section-title"><span class="material-symbols-rounded" style="color: var(--color-sakura);">notifications</span> Thông báo</h2>
+            
+            <div class="noti-list">
+                <div class="noti-card unread">
+                    <div class="noti-icon"><span class="material-symbols-rounded">update</span></div>
+                    <div class="noti-content">
+                        <div class="noti-title">Truyện "Chuyện tình của tôi" có chương mới!</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Chương 13 vừa được cập nhật 10 phút trước.</div>
+                        <div class="noti-time" style="margin-top: 5px;">Hôm nay, 10:45 AM</div>
+                    </div>
+                </div>
+
+                <div class="noti-card">
+                    <div class="noti-icon" style="background: #e6f7ff; color: #1890ff;"><span class="material-symbols-rounded">campaign</span></div>
+                    <div class="noti-content">
+                        <div class="noti-title">Chào mừng bạn đến với MangaYom!</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Hệ thống đã nâng cấp giao diện chuẩn Nhật Bản thư giãn. Chúc bạn có trải nghiệm tuyệt vời.</div>
+                        <div class="noti-time" style="margin-top: 5px;">Hôm qua, 09:00 AM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANE: SETTINGS -->
+        <div id="tab-settings" class="tab-pane">
+            <h2 class="section-title"><span class="material-symbols-rounded" style="color: var(--text-primary);">settings</span> Cài đặt tài khoản</h2>
+            
+            <div class="setting-group">
+                <h3 class="setting-title">Giao diện</h3>
+                <div class="setting-row">
+                    <div>
+                        <div style="font-weight: 600;">Chế độ tối (Dark Mode)</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Giảm ánh sáng xanh, tốt cho mắt vào ban đêm</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="themeToggleProfile">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <!-- Có thể thêm chỉnh font chữ ở đây -->
+            </div>
+
+            <div class="setting-group">
+                <h3 class="setting-title">Bảo mật & Dữ liệu</h3>
+                <div class="setting-row">
+                    <div>
+                        <div style="font-weight: 600;">Xóa lịch sử đọc</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Xóa toàn bộ dữ liệu bạn đã xem</div>
+                    </div>
+                    <button class="btn-danger">Xóa dữ liệu</button>
+                </div>
+                <div class="setting-row" style="margin-bottom: 0;">
+                    <div>
+                        <div style="font-weight: 600; color: #ff4d4f;">Xóa tài khoản vĩnh viễn</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Hành động này không thể hoàn tác</div>
+                    </div>
+                    <button class="btn-danger" style="background: #ff4d4f; color: white;">Xóa tài khoản</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        // Remove active class from buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        // Added to the clicked button directly matching onclick event handler (event.currentTarget)
+        event.currentTarget.classList.add('active');
+
+        // Hide all tabs
+        document.querySelectorAll('.tab-pane').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab
+        document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // Connect local dark mode toggle to the script in _Layout
+    document.getElementById('themeToggleProfile').addEventListener('change', function(e) {
+        const isDark = e.target.checked;
+        if(isDark) document.documentElement.setAttribute('data-theme', 'dark');
+        else document.documentElement.removeAttribute('data-theme');
+    });
+
+    // Sync toggle status on load
+    document.addEventListener('DOMContentLoaded', () => {
+        if(document.documentElement.getAttribute('data-theme') === 'dark') {
+            document.getElementById('themeToggleProfile').checked = true;
+        }
+    });
+</script>

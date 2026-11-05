@@ -1,0 +1,116 @@
+@{
+    ViewData["Title"] = "Quản Lý Truyện";
+    Layout = "_AdminLayout";
+    var stories = ViewBag.Stories as IEnumerable<dynamic>;
+    var search = ViewBag.Search as string;
+    var status = ViewBag.Status as string;
+    var currentPage = ViewBag.CurrentPage != null ? (int)ViewBag.CurrentPage : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+}
+
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; font-size: 1.25rem;">Danh Sách Manga / Ngôn Tình</h3>
+        
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <form method="get" action="/Admin/Stories" style="display: flex; gap: 10px; align-items: center; margin: 0;">
+                <select name="status" class="admin-input" style="width: auto; padding: 5px; height: 35px;" onchange="this.form.submit()">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Ongoing" selected="@(status == "Ongoing")">Đang cập nhật</option>
+                    <option value="Completed" selected="@(status == "Completed")">Đã hoàn thành</option>
+                </select>
+                <div class="search-bar" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 5px 15px; display:flex; align-items:center; height: 35px; box-sizing: border-box;">
+                    <span class="material-symbols-rounded" style="color:var(--text-secondary); font-size: 20px;">search</span>
+                    <input type="text" name="search" value="@search" placeholder="Tìm tên truyện, tác giả..." style="border:none;background:transparent;outline:none; width: 200px; color:var(--text-primary); margin-left: 8px;">
+                </div>
+            </form>
+            
+            <a asp-controller="Admin" asp-action="AddStory" class="admin-btn btn-primary" style="background-color: var(--color-matcha); color: #2c7a4b; box-shadow: 0 4px 10px rgba(207, 232, 213, 0.5); text-decoration: none; height: 35px; box-sizing: border-box;">
+                <span class="material-symbols-rounded">add</span>
+                Thêm Truyện Mới
+            </a>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Hình Ảnh</th>
+                    <th>Tên Truyện</th>
+                    <th>Tác Giả</th>
+                    <th>Số Chương</th>
+                    <th>Trạng Thái</th>
+                    <th>Lượt Xem</th>
+                    <th style="text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(stories != null && stories.Any())
+                {
+                    foreach (var s in stories)
+                    {
+                        <tr>
+                            <td>
+                                <img src="@s.CoverImage" alt="@s.Title" style="width: 60px; height: 80px; object-fit: cover; border-radius: 4px;" onerror="this.src='/images/no-cover.png';" />
+                            </td>
+                            <td>
+                                <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">@s.Title</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Tạo: @s.CreatedAt.ToString("dd/MM/yyyy")</div>
+                            </td>
+                            <td>@(string.IsNullOrEmpty(s.Author) ? "Đang cập nhật" : s.Author)</td>
+                            <td>@s.ChapterCount</td>
+                            <td>
+                                @if(s.Status == "Ongoing") {
+                                    <span class="status-badge status-active">Đang cập nhật</span>
+                                } else if(s.Status == "Completed") {
+                                    <span class="status-badge" style="background: var(--bg-body); color: var(--text-secondary); border: 1px solid var(--border-color);">Đã Hoàn Thành</span>
+                                } else {
+                                    <span class="status-badge status-banned">@s.Status</span>
+                                }
+                            </td>
+                            <td style="font-weight: 600;">@s.ViewCount</td>
+                            <td class="action-cell">
+                                <a asp-controller="Admin" asp-action="EditStory" asp-route-id="@s.StoryId" class="icon-btn" title="Chỉnh sửa" style="color: var(--color-matcha);"><span class="material-symbols-rounded">edit</span></a>
+                                <form asp-controller="Admin" asp-action="DeleteStory" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa truyện này?');">
+                                    <input type="hidden" name="storyId" value="@s.StoryId" />
+                                    <button type="submit" class="icon-btn" title="Xóa" style="color: #ff4d4f; border: none; background: transparent; cursor: pointer;"><span class="material-symbols-rounded">delete</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="7" style="text-align:center; color: var(--text-secondary);">Không tìm thấy truyện nào</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if(totalPages > 1)
+    {
+        <!-- Pagination -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="font-size: 0.9rem; color: var(--text-secondary);">Trang @currentPage / @totalPages</div>
+            <div style="display: flex; gap: 5px;">
+                @if(currentPage > 1) {
+                    <a asp-controller="Admin" asp-action="Stories" asp-route-page="@(currentPage-1)" asp-route-search="@search" asp-route-status="@status" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_left</span></a>
+                }
+                
+                @for(int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                {
+                    if(i == currentPage) {
+                        <span class="admin-btn" style="background: var(--color-matcha); color: #2c7a4b; border: 1px solid var(--color-matcha); padding: 5px 15px;">@i</span>
+                    } else {
+                        <a asp-controller="Admin" asp-action="Stories" asp-route-page="@i" asp-route-search="@search" asp-route-status="@status" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 15px; color: var(--text-secondary); text-decoration:none;">@i</a>
+                    }
+                }
+
+                @if(currentPage < totalPages) {
+                    <a asp-controller="Admin" asp-action="Stories" asp-route-page="@(currentPage+1)" asp-route-search="@search" asp-route-status="@status" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none;"><span class="material-symbols-rounded">chevron_right</span></a>
+                }
+            </div>
+        </div>
+    }
+</div>

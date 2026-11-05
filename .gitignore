@@ -1,0 +1,30 @@
+## Build and Temporary Visual Studio Files
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+*.pidb
+*.booproj
+
+## Logs and Temp files
+*.log
+tmp_out*.txt
+error.html
+*.tmp
+
+## Publish / Deployment
+*.publishproj
+*.pubxml
+*.azurePubxml
+_PublishedWebsites/
+
+## Operating System Files
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store

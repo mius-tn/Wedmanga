@@ -1,0 +1,273 @@
+@{
+    ViewData["Title"] = "Bảng Xếp Hạng";
+}
+
+@section Scripts {
+    <style>
+        .ranking-container {
+            padding: 2rem 0;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .ranking-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .ranking-title {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .ranking-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Tabs */
+        .ranking-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 2rem;
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--color-border);
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-size: 0.95rem;
+        }
+
+        .tab-btn:hover {
+            background-color: var(--color-sakura-light);
+            color: var(--accent);
+        }
+
+        .tab-btn.active {
+            background-color: var(--color-sakura);
+            color: white;
+            border-color: var(--color-sakura);
+            box-shadow: 0 4px 12px rgba(250, 218, 221, 0.4);
+        }
+
+        /* Ranking List */
+        .ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .rank-card {
+            display: flex;
+            background-color: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            padding: 1.5rem;
+            gap: 1.5rem;
+            align-items: center;
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rank-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--color-sakura-light);
+        }
+
+        /* Top 3 Glow Effect */
+        .rank-card.top-1 { border-color: #ffd700; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.15); }
+        .rank-card.top-2 { border-color: #c0c0c0; box-shadow: 0 4px 20px rgba(192, 192, 192, 0.15); }
+        .rank-card.top-3 { border-color: #cd7f32; box-shadow: 0 4px 20px rgba(205, 127, 50, 0.15); }
+
+        .rank-number {
+            font-family: var(--font-heading);
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-light); /* Xám nhạt mặc định */
+            width: 50px;
+            text-align: center;
+        }
+
+        .top-1 .rank-number { color: #ffd700; }
+        .top-2 .rank-number { color: #c0c0c0; }
+        .top-3 .rank-number { color: #cd7f32; }
+
+        .top-crown {
+            position: absolute;
+            top: 10px;
+            left: 28px;
+            color: #ffd700;
+            font-size: 24px;
+        }
+
+        .rank-image {
+            width: 90px;
+            height: 125px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .rank-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .rank-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .rank-title:hover {
+            color: var(--color-sakura);
+        }
+
+        .rank-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .meta-item .material-symbols-rounded {
+            font-size: 18px;
+        }
+
+        .rank-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: auto;
+        }
+
+        .tag-pill {
+            background-color: var(--color-sakura-light);
+            color: var(--accent);
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        @@media (max-width: 768px) {
+            .rank-card {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            .rank-number {
+                font-size: 2rem;
+                width: 30px;
+            }
+            .rank-image {
+                width: 70px;
+                height: 100px;
+            }
+            .rank-title {
+                font-size: 1.1rem;
+            }
+            .rank-meta {
+                gap: 0.75rem;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+}
+
+<div class="container-custom ranking-container">
+    <div class="ranking-header">
+        <h1 class="ranking-title">Bảng Xếp Hạng</h1>
+        <p class="ranking-subtitle">Những câu chuyện được yêu thích nhất thời điểm hiện tại</p>
+    </div>
+
+    <div class="ranking-tabs">
+        <a href="/Home/Ranking?type=view" class="tab-btn @(ViewBag.Type == "view" ? "active" : "")">Top Lượt Xem</a>
+        <a href="/Home/Ranking?type=rating" class="tab-btn @(ViewBag.Type == "rating" ? "active" : "")">Top Đánh Giá</a>
+    </div>
+
+    <div class="ranking-list">
+        @if (ViewBag.Stories != null) {
+            var stories = (IEnumerable<Wedmanga.Models.Entities.Story>)ViewBag.Stories;
+            int rank = ((ViewBag.CurrentPage ?? 1) - 1) * 20 + 1; // Assuming pageSize = 20
+            foreach (var s in stories)
+            {
+                string topClass = rank == 1 ? "top-1" : (rank == 2 ? "top-2" : (rank == 3 ? "top-3" : ""));
+                
+                <div class="rank-card @topClass">
+                    @if (rank == 1) {
+                        <span class="material-symbols-rounded top-crown">social_leaderboard</span>
+                    }
+                    <div class="rank-number">@rank</div>
+                    
+                    @if (!string.IsNullOrEmpty(s.CoverImage)) {
+                        <img src="@s.CoverImage" alt="@s.Title" class="rank-image">
+                    } else {
+                        <div class="rank-image" style="background: linear-gradient(45deg, var(--color-sakura), var(--color-matcha)); display:flex; align-items:center; justify-content:center; color: white;">
+                             <span class="material-symbols-rounded">menu_book</span>
+                        </div>
+                    }
+
+                    <div class="rank-info">
+                        <a href="/truyen/@s.Slug" class="rank-title">@s.Title</a>
+                        <div class="rank-meta">
+                            <div class="meta-item">
+                                <span class="material-symbols-rounded" style="color: #ffd700;">star</span>
+                                <span>@s.RatingAvg.ToString("0.0")</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="material-symbols-rounded">visibility</span>
+                                <span>@s.ViewCount</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="material-symbols-rounded">groups</span>
+                                <span>Tác giả: @(string.IsNullOrEmpty(s.Author) ? "Chưa rõ" : s.Author)</span>
+                            </div>
+                        </div>
+                        <div class="rank-tags">
+                            <span class="tag-pill">@(s.Status == "Ongoing" ? "Đang ra" : s.Status)</span>
+                        </div>
+                    </div>
+                </div>
+                rank++;
+            }
+        }
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; gap: 5px; margin-top: 2rem;">
+            @for(int i = 1; i <= ViewBag.TotalPages; i++)
+            {
+                if(i == ViewBag.CurrentPage) {
+                    <span class="tab-btn active" style="padding: 5px 15px;">@i</span>
+                } else {
+                    <a href="/Home/Ranking?type=@ViewBag.Type&page=@i" class="tab-btn" style="padding: 5px 15px; text-decoration: none;">@i</a>
+                }
+            }
+        </div>
+    }
+</div>

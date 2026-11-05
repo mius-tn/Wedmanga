@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "Quản Lý Role (Quyền truy cập)";
+    Layout = "_AdminLayout";
+    var roles = ViewBag.Roles as IEnumerable<dynamic>;
+}
+
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; font-size: 1.25rem;">Danh Sách Nhóm Quyền</h3>
+        <button class="admin-btn btn-primary" onclick="window.location.href='/Admin/AddRole'" style="background-color: var(--color-matcha); color: #2c7a4b; box-shadow: 0 4px 10px rgba(207, 232, 213, 0.5);">
+            <span class="material-symbols-rounded">add</span> Thêm Quyền
+        </button>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Tên Role</th>
+                    <th>Mô Tả</th>
+                    <th>Số Tài Khoản</th>
+                    <th style="text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(roles != null && roles.Any())
+                {
+                    foreach (var r in roles)
+                    {
+                        <tr>
+                            <td style="color: var(--text-secondary);">#@r.RoleId</td>
+                            <td>
+                                @if(r.RoleName == "Admin"){
+                                    <span class="status-badge" style="background: rgba(139, 61, 255, 0.1); color: #8b3dff;"><span class="material-symbols-rounded" style="font-size:14px; margin-right:4px;">admin_panel_settings</span>@r.RoleName</span>
+                                } else if(r.RoleName == "Moderator"){
+                                    <span class="status-badge" style="background: rgba(255, 152, 0, 0.1); color: #e65100;"><span class="material-symbols-rounded" style="font-size:14px; margin-right:4px;">edit_document</span>@r.RoleName</span>
+                                } else {
+                                    <span class="status-badge" style="background: var(--color-sakura-light); color: var(--accent); border: 1px solid rgba(250, 218, 221, 0.5);"><span class="material-symbols-rounded" style="font-size:14px; margin-right:4px;">person</span>@r.RoleName</span>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrEmpty(r.Description) ? "Không có" : r.Description)</td>
+                            <td style="font-weight: 600;">@r.UserCount</td>
+                            <td class="action-cell">
+                                <a href="/Admin/EditRole/@r.RoleId" class="icon-btn" title="Chỉnh sửa" style="color: var(--color-matcha);"><span class="material-symbols-rounded">edit</span></a>
+                                @if(r.RoleName != "Admin" && r.RoleName != "User") {
+                                    <form asp-controller="Admin" asp-action="DeleteRole" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhóm quyền này?');">
+                                        <input type="hidden" name="roleId" value="@r.RoleId" />
+                                        <button type="submit" class="icon-btn" title="Xóa" style="color: #ff4d4f; border:none; background:transparent;"><span class="material-symbols-rounded">delete</span></button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="5" style="text-align:center;">Không có nhóm quyền nào</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

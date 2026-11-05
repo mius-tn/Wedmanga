@@ -1,0 +1,233 @@
+@{
+    ViewData["Title"] = "Thêm Truyện Mới";
+    Layout = "_AdminLayout";
+}
+
+<!-- Cho Multi-select Thể loại -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<style>
+    .form-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        display: block;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+    
+    .required::after {
+        content: '*';
+        color: #ff4d4f;
+        margin-left: 4px;
+    }
+
+    /* Drag & Drop Cover */
+    .cover-upload-box {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        background: var(--bg-body);
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+    .cover-upload-box:hover, .cover-upload-box.dragover {
+        border-color: var(--color-matcha);
+        background: rgba(207, 232, 213, 0.2);
+    }
+
+    .cover-upload-box i {
+        font-size: 3rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+    
+    .cover-input {
+        position: absolute;
+        width: 100%; height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    /* Select2 custom styling for matcha theme */
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        min-height: 42px;
+        background: transparent;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--multiple {
+        border-color: var(--color-matcha);
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: var(--color-matcha);
+        border: none;
+        color: #2c7a4b;
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin-top: 6px;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: #2c7a4b;
+        margin-right: 6px;
+    }
+    
+    @@media (max-width: 900px) {
+        .form-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<form asp-controller="Admin" asp-action="AddStory" method="post" enctype="multipart/form-data">
+<div class="form-grid">
+    <!-- Cột chính -->
+    <div class="admin-card">
+        <h3 style="margin-top:0; margin-bottom: 1.5rem; color: var(--text-primary);">Thông Tin Cơ Bản</h3>
+        
+        <div style="margin-bottom: 1.25rem;">
+            <label class="form-label required">Tên truyện</label>
+            <input type="text" name="title" class="admin-input" id="title" placeholder="VD: Hành Trình Hoa Anh Đào" required>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label class="form-label">Tên khác (Alternate Name)</label>
+            <input type="text" name="alternateName" class="admin-input" placeholder="Tên tiếng Việt / Tiếng Nhật / Tiếng Anh...">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+            <div>
+                <label class="form-label required">Tác giả</label>
+                <input type="text" name="author" class="admin-input" id="author" placeholder="VD: Sakura Aki" required>
+            </div>
+            <div>
+                <label class="form-label required">Kiểu truyện</label>
+                <select name="type" class="admin-input" required>
+                    <option value="Manga">Manga</option>
+                    <option value="Light Novel">Light Novel</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label class="form-label required">Thể loại</label>
+            <select name="selectedCategories" class="admin-input select2-genres" id="genres" multiple="multiple" style="width: 100%;" required>
+                @if(ViewBag.Categories != null)
+                {
+                    foreach(var cat in ViewBag.Categories)
+                    {
+                        <option value="@cat.CategoryId">@cat.Name</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label class="form-label">Mô tả nội dung</label>
+            <textarea name="description" class="admin-input" rows="6" placeholder="Viết giới thiệu tóm tắt nội dung câu chuyện..."></textarea>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Hỗ trợ định dạng văn bản cơ bản (Markdown).</div>
+        </div>
+    </div>
+
+    <!-- Cột phụ -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
+        <div class="admin-card">
+            <h3 style="margin-top:0; margin-bottom: 1rem; color: var(--text-primary);">Ảnh Bìa</h3>
+            <div class="cover-upload-box" id="dropZone">
+                <input type="file" id="coverImage" name="coverImage" class="cover-input" accept="image/*" required>
+                <span class="material-symbols-rounded">cloud_upload</span>
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Kéo thả ảnh vào đây</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">hoặc click để chọn tệp (JPG, PNG < 2MB)</div>
+                <img id="previewImage" style="display: none; width: 100%; height: 100%; object-fit: cover; position: absolute; top:0; left:0; border-radius: inherit; z-index: 2;" />
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h3 style="margin-top:0; margin-bottom: 1rem; color: var(--text-primary);">Tùy Chỉnh Nâng Cao</h3>
+            
+            <div style="margin-bottom: 1.25rem;">
+                <label class="form-label">Trạng thái</label>
+                <select name="status" class="admin-input">
+                    <option value="Ongoing">Đang cập nhật</option>
+                    <option value="Completed">Hoàn thành</option>
+                    <option value="Drop">Tạm ngưng</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                    <label class="form-label">Số chương ban đầu</label>
+                    <input type="number" name="chapterCount" class="admin-input" value="0">
+                </div>
+                <div>
+                    <label class="form-label">Lượt xem ban đầu</label>
+                    <input type="number" name="viewCount" class="admin-input" value="0">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label class="form-label">Rating ban đầu (0-5)</label>
+                <div style="display:flex; align-items:center; gap: 10px;">
+                    <input type="range" name="ratingAvg" min="0" max="5" step="0.1" value="4.5" style="flex:1;" oninput="document.getElementById('ratingVal').innerText = this.value">
+                    <span id="ratingVal" style="font-weight:700; color:var(--accent); width: 30px;">4.5</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                <button type="submit" class="admin-btn btn-primary" id="btnSave" style="flex: 2;">Thêm Mới Truyện</button>
+                <a asp-controller="Admin" asp-action="Stories" class="admin-btn" style="flex: 1; background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-primary);">Hủy</a>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+
+<script>
+    $(document).ready(function() {
+        // Init Select2
+        $('.select2-genres').select2({
+            placeholder: "Chọn thể loại...",
+            allowClear: true
+        });
+
+        // Cover Image Upload Preview
+        const coverInput = document.getElementById('coverImage');
+        const preview = document.getElementById('previewImage');
+        const dropZone = document.getElementById('dropZone');
+
+        coverInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Validation is primarily handled by required properties and browser standard behavior.
+        // We defer backend validation saving.
+    });
+</script>
+
+<style>
+    @@keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>

@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Thêm Nhóm Quyền Mới";
+    Layout = "_AdminLayout";
+}
+
+<div class="admin-card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem;">
+        <a href="/Admin/Roles" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 5px 10px; color: var(--text-secondary); text-decoration:none; display: flex; align-items: center; gap: 5px;" title="Quay lại">
+            <span class="material-symbols-rounded" style="font-size: 18px;">arrow_back</span>
+        </a>
+        <h3 style="margin: 0; font-size: 1.5rem;">Thêm Nhóm Quyền Mới</h3>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div style="background-color: #ffe6e6; color: #ff4d4f; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div asp-validation-summary="All"></div>
+        </div>
+    }
+
+    <form asp-controller="Admin" asp-action="AddRole" method="post">
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <div>
+                <label style="display:block; font-weight:600; margin-bottom:8px; color:var(--text-primary);">Tên Quyền <span style="color:#ff4d4f;">*</span></label>
+                <input type="text" name="roleName" class="admin-input" required placeholder="VD: ContentManager" style="width:100%; padding: 12px 15px;">
+            </div>
+            <div>
+                <label style="display:block; font-weight:600; margin-bottom:8px; color:var(--text-primary);">Mô tả chi tiết</label>
+                <input type="text" name="description" class="admin-input" placeholder="Quyền quản lý nội dung..." style="width:100%; padding: 12px 15px;">
+            </div>
+        </div>
+
+        <h4 style="margin-bottom: 1rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Cấu Hình Phân Quyền (Tương Lai)</h4>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">Cấu hình dưới đây hiện chỉ dành cho giao diện hiển thị, chức năng lọc quyền chi tiết sẽ được tích hợp trong phiên bản CSDL tiếp theo.</p>
+
+        <div style="overflow-x: auto; margin-bottom: 2rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+            <table class="admin-table" style="margin: 0;">
+                <thead style="background: var(--bg-body);">
+                    <tr>
+                        <th style="padding: 1rem;">Chức Năng</th>
+                        <th style="text-align: center; width: 80px;">Xem</th>
+                        <th style="text-align: center; width: 80px;">Thêm</th>
+                        <th style="text-align: center; width: 80px;">Sửa</th>
+                        <th style="text-align: center; width: 80px;">Xóa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var modules = new[] { "Truyện / Manga", "Chương Truyện", "Thể Loại", "Tài Khoản", "Nhóm Quyền", "Bình Luận", "Lịch Sử Đọc" };
+                    }
+                    @foreach (var mod in modules)
+                    {
+                        <tr>
+                            <td style="font-weight: 500;">@mod</td>
+                            <td style="text-align: center;"><input type="checkbox" style="width: 18px; height: 18px; accent-color: var(--color-matcha);" checked></td>
+                            <td style="text-align: center;"><input type="checkbox" style="width: 18px; height: 18px; accent-color: var(--color-matcha);"></td>
+                            <td style="text-align: center;"><input type="checkbox" style="width: 18px; height: 18px; accent-color: var(--color-matcha);"></td>
+                            <td style="text-align: center;"><input type="checkbox" style="width: 18px; height: 18px; accent-color: var(--color-matcha);"></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display:flex; justify-content: flex-end; gap: 15px; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <a href="/Admin/Roles" class="admin-btn" style="background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-primary); text-decoration: none; padding: 10px 20px;">Hủy Bỏ</a>
+            <button type="submit" class="admin-btn btn-primary" style="background-color: var(--color-matcha); color: #2c7a4b; padding: 10px 24px; font-size: 1rem;">
+                <span class="material-symbols-rounded">save</span> Lưu Quyền Mới
+            </button>
+        </div>
+    </form>
+</div>

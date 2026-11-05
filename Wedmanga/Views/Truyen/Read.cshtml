@@ -1,0 +1,875 @@
+@using Wedmanga.Models.Entities
+@{
+    var chapter = ViewBag.Chapter as Chapter;
+    ViewData["Title"] = chapter != null ? $"{chapter.Story.Title} - Chương {chapter.ChapterNumber}" : "Không tìm thấy chương";
+    Layout = null; // Bỏ layout chung để trang truyện chiếm full màn hình
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MangaYom</title>
+    
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --bg-color: #f8f6f4; /* Nền kem sáng / xám nhạt */
+            --text-color: #333333;
+            --accent-color: #8b3dff; /* Tím dựa theo icon/shadow trong hình */
+            --accent-hover: #7b29f0;
+            --toolbar-bg: rgba(255, 255, 255, 0.98);
+            --border-color: #eeeeee;
+        }
+
+        /* ----- Cơ chế Dark Mode ----- */
+        html[data-theme="dark"], body[data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --toolbar-bg: rgba(30, 30, 30, 0.98);
+            --border-color: #333333;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease;
+        }
+
+        /* ----- Toolbars ----- */
+        .toolbar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            background: var(--toolbar-bg);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            height: 60px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .top-toolbar {
+            top: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .bottom-toolbar {
+            bottom: 0;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            padding: 0.5rem 0;
+            height: auto;
+        }
+
+        /* Ẩn Toolbar khi đọc */
+        body.reading .top-toolbar { transform: translateY(-100%); }
+        body.reading .bottom-toolbar { transform: translateY(100%); }
+        
+        /* Ẩn floating buttons khi đọc */
+        body.reading .floating-nav { transform: translateX(150%); opacity: 0; }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(139, 61, 255, 0.08);
+        }
+
+        /* ----- Manga Content ----- */
+        .manga-container {
+            max-width: 800px; /* Độ rộng của trang truyện */
+            margin: 0 auto;
+            padding: 60px 0 80px 0; /* Khoảng trống cho top/bottom toolbar */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .manga-page {
+            width: 100%;
+            max-width: 100%;
+            display: block;
+            margin-bottom: 0; /* Manga thường liền kề nhau dính liền */
+            object-fit: contain;
+            background-color: transparent;
+        }
+        
+        .manga-page.with-gap {
+            margin-bottom: 8px; /* Nếu thích có gap nhỏ giữa các trang */
+        }
+
+        /* Chế độ ngang (ngay trong container) */
+        .manga-container.horizontal-mode {
+            padding: 60px 0 80px 0;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            max-width: 100%;
+            box-sizing: border-box;
+            background-color: transparent;
+        }
+        .manga-container.horizontal-mode .manga-page {
+            height: 100%;
+            width: auto;
+            aspect-ratio: 1/1.4;
+            display: none;
+        }
+
+        /* ----- Nút chuyển trang ngang ----- */
+        .horiz-nav-btn {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            width: 50px;
+            height: 100px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 80;
+            transition: 0.2s;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .horiz-nav-btn:hover { background: rgba(0,0,0,0.05); }
+        [data-theme="dark"] .horiz-nav-btn:hover { background: rgba(255,255,255,0.05); }
+        #horizPrevBtn { left: 10px; }
+        #horizNextBtn { right: 10px; }
+
+        /* ----- Chapter Selector (Bottom) ----- */
+        .chapter-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-arrow {
+            color: var(--accent-color);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .nav-arrow:hover {
+            background-color: rgba(139, 61, 255, 0.08);
+        }
+
+        .select-wrapper {
+            position: relative;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 8px 16px;
+            padding-right: 32px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: var(--text-color);
+            min-width: 250px;
+            text-align: center;
+        }
+
+        [data-theme="dark"] .select-wrapper {
+            background: #2a2a2a;
+        }
+
+        /* ----- Floating Fast Nav (Right Middle) ----- */
+        .floating-nav {
+            position: fixed;
+            right: 20px;
+            bottom: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 90;
+            transition: all 0.3s ease;
+        }
+
+        .float-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-color);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .float-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* ----- Settings Modal ----- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .settings-modal {
+            background: var(--toolbar-bg);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transform: scale(0.95);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+        .modal-overlay.active .settings-modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 50%;
+        }
+        .modal-close:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .setting-group {
+            margin-bottom: 1.5rem;
+        }
+        .setting-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .select-box {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Direction Cards */
+        .direction-options {
+            display: flex;
+            gap: 1rem;
+        }
+        .direction-card {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .direction-card.active {
+            border-color: #ff6b81;
+            background-color: rgba(255, 107, 129, 0.05);
+        }
+        .custom-radio {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .direction-card.active .custom-radio {
+            border-color: #ff6b81;
+        }
+        .custom-radio::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff6b81;
+            transform: scale(0);
+            transition: 0.2s;
+        }
+        .direction-card.active .custom-radio::after {
+            transform: scale(1);
+        }
+        .direction-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .direction-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .direction-desc {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* Slider */
+        .slider-container {
+            position: relative;
+            padding-top: 10px;
+        }
+        .slider-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: #888;
+        }
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ff6b81;
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(255,107,129, 0.2);
+        }
+
+        /* Preview Box */
+        .preview-box {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 200px;
+            background: rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            padding: 10px;
+        }
+        .preview-content {
+            display: flex;
+            flex-direction: column; /* Default Vertical */
+            gap: 0px; /* Default gap */
+            transition: all 0.3s ease;
+        }
+        .preview-content.horizontal {
+            flex-direction: row;
+        }
+        .preview-page {
+            width: 80px;
+            height: 112px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #aaa;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Modal Footer */
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .btn-outline, .btn-primary {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        .btn-outline:hover {
+            background: rgba(0,0,0,0.05);
+        }
+        .btn-primary {
+            background: #ff6b81;
+            border: 1px solid #ff6b81;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #e55a6d;
+        }
+
+        /* Overlay click to toggle Toolbars */
+        .click-layer {
+            position: fixed;
+            top: 60px;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            z-index: 50; /* Above images, below toolbars */
+            cursor: pointer;
+        }
+
+        @@media (max-width: 768px) {
+            .select-wrapper {
+                min-width: 200px;
+                font-size: 0.85rem;
+            }
+            .toolbar {
+                padding: 0 0.5rem;
+            }
+            .floating-nav {
+                right: 10px;
+                bottom: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP TOOLBAR -->
+    <div class="toolbar top-toolbar">
+        <div class="toolbar-group">
+            @if (chapter != null) {
+                <a href="/truyen/@chapter.Story.Slug" class="icon-btn" aria-label="Back" title="Quay lại">
+                    <span class="material-symbols-rounded">arrow_back</span>
+                </a>
+            } else {
+                <a href="/" class="icon-btn" aria-label="Back" title="Quay lại">
+                    <span class="material-symbols-rounded">arrow_back</span>
+                </a>
+            }
+            <a href="/" class="icon-btn" aria-label="Home" title="Trang chủ">
+                <span class="material-symbols-rounded">home</span>
+            </a>
+        </div>
+        
+        <div class="toolbar-group">
+            <button class="icon-btn" id="readThemeToggleBtn" aria-label="Toggle Dark Mode" title="Đổi giao diện Sáng/Tối">
+                <span class="material-symbols-rounded" id="readThemeIcon">dark_mode</span>
+            </button>
+            <button class="icon-btn" id="themeBtn" aria-label="Settings" title="Cài đặt đọc truyện">
+                <span class="material-symbols-rounded">settings</span>
+            </button>
+            <button class="icon-btn" id="bookmarkBtn" aria-label="Bookmark" title="Đánh dấu">
+                <span class="material-symbols-rounded">bookmark_border</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- INVISIBLE LAYER TO TOGGLE UI ON CLICK -->
+    <div class="click-layer" id="toggleUI"></div>
+
+    <!-- HORIZONTAL NAV BUTTONS -->
+    <button id="horizPrevBtn" class="horiz-nav-btn" aria-label="Trang trước"><span class="material-symbols-rounded">chevron_left</span></button>
+    <button id="horizNextBtn" class="horiz-nav-btn" aria-label="Trang sau"><span class="material-symbols-rounded">chevron_right</span></button>
+
+    <!-- MANGA IMAGES CONTENT -->
+    <div class="manga-container">
+        @if (chapter != null && !string.IsNullOrEmpty(chapter.Content)) {
+            var isHtml = chapter.Content.Contains("<img") || (chapter.Content.Contains("<") && chapter.Content.Contains(">"));
+            if (isHtml) {
+                <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                    @Html.Raw(chapter.Content)
+                </div>
+            } else {
+                var lines = chapter.Content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                int pageIdx = 1;
+                foreach (var line in lines) {
+                    var url = line.Trim();
+                    if (url.StartsWith("http") || url.StartsWith("/") || url.StartsWith("data:image")) {
+                        <img src="@url" class="manga-page" alt="Trang @pageIdx" loading="lazy" />
+                    } else if (!string.IsNullOrEmpty(url)) {
+                        <p style="text-align:center; padding: 20px;">@url</p>
+                    }
+                    pageIdx++;
+                }
+            }
+        } else {
+            <div style="padding: 100px 0; text-align: center;">
+                <h3 style="color: var(--text-secondary);">Chương này chưa có nội dung.</h3>
+            </div>
+        }
+    </div>
+
+    <!-- FLOATING FAST NAV -->
+    <div class="floating-nav">
+        <button class="float-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" aria-label="Scroll Top">
+            <span class="material-symbols-rounded">arrow_upward</span>
+        </button>
+        <button class="float-btn" onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})" aria-label="Scroll Bottom">
+            <span class="material-symbols-rounded">arrow_downward</span>
+        </button>
+    </div>
+
+    <!-- BOTTOM TOOLBAR -->
+    <div class="toolbar bottom-toolbar">
+        <div class="chapter-selector">
+            @if (chapter != null) {
+                if (ViewBag.PrevChapter != null) {
+                    <a href="/truyen/@chapter.Story.Slug/chuong/@ViewBag.PrevChapter" class="nav-arrow" aria-label="Previous Chapter" title="Chương trước">
+                        <span class="material-symbols-rounded">chevron_left</span>
+                    </a>
+                } else {
+                    <button class="nav-arrow" disabled style="opacity:0.3;"><span class="material-symbols-rounded">chevron_left</span></button>
+                }
+                
+                <select class="select-wrapper" onchange="window.location.href=this.value;">
+                    @if (chapter.Story.Chapters != null) {
+                        // Chapters are ordered descending by Default. Render ascending if preferred or keep order.
+                        // I will order it ascending so it reads 1,2,3 from top to bottom
+                        foreach (var ch in chapter.Story.Chapters.OrderBy(c => c.ChapterNumber)) {
+                            bool isSelected = (ch.ChapterNumber == chapter.ChapterNumber);
+                            <option value="/truyen/@chapter.Story.Slug/chuong/@ch.ChapterNumber" selected="@(isSelected ? "selected" : null)">
+                                Chương @ch.ChapterNumber @(!string.IsNullOrEmpty(ch.Title) ? "- " + ch.Title : "")
+                            </option>
+                        }
+                    }
+                </select>
+                
+                if (ViewBag.NextChapter != null) {
+                    <a href="/truyen/@chapter.Story.Slug/chuong/@ViewBag.NextChapter" class="nav-arrow" aria-label="Next Chapter" title="Chương sau">
+                        <span class="material-symbols-rounded">chevron_right</span>
+                    </a>
+                } else {
+                    <button class="nav-arrow" disabled style="opacity:0.3;"><span class="material-symbols-rounded">chevron_right</span></button>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay" id="settingsModal" onclick="closeSettings()">
+        <div class="settings-modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Cài đặt đọc truyện</h3>
+                <button class="modal-close" onclick="closeSettings()"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <span class="setting-label">Nhóm dịch</span>
+                    <select class="select-box">
+                        <option>ổ của người simp</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <span class="setting-label">Hướng đọc</span>
+                    <div class="direction-options">
+                        <div class="direction-card" id="dirHorizontal" onclick="setDirection('horizontal')">
+                            <div class="custom-radio"></div>
+                            <span class="material-symbols-rounded">width_full</span>
+                            <div class="direction-info">
+                                <span class="direction-title">Ngang</span>
+                                <span class="direction-desc">Lướt trái / phải</span>
+                            </div>
+                        </div>
+                        <div class="direction-card active" id="dirVertical" onclick="setDirection('vertical')">
+                            <div class="custom-radio"></div>
+                            <span class="material-symbols-rounded">height</span>
+                            <div class="direction-info">
+                                <span class="direction-title">Dọc</span>
+                                <span class="direction-desc">Lướt lên / xuống</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group" id="gapSettingGroup">
+                    <div class="slider-info">
+                        <span class="setting-label" style="margin:0;">Khoảng cách giữa các trang</span>
+                        <span id="gapValue">0px</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="custom-slider" id="gapSlider" min="0" max="20" value="0" oninput="updateGap(this.value)" />
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <span class="setting-label">Xem trước</span>
+                    <div class="preview-box">
+                        <div class="preview-content" id="previewContent">
+                            <div class="preview-page">Page 1</div>
+                            <div class="preview-page">Page 2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-outline" onclick="resetSettings()">Đặt lại</button>
+                <button class="btn-primary" onclick="saveSettings()">Lưu cấu hình</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            const toggleLayer = document.getElementById('toggleUI');
+            const bookmarkBtn = document.getElementById('bookmarkBtn');
+            const themeBtn = document.getElementById('themeBtn');
+
+            // 1. Click outsite / on image to toggle toolbars
+            toggleLayer.addEventListener('click', () => {
+                body.classList.toggle('reading');
+            });
+
+            // 2. Hide toolbars on scroll down automatically
+            let lastScroll = 0;
+            window.addEventListener('scroll', () => {
+                const currentScroll = window.pageYOffset;
+                // Nếu cuộn xuống
+                if (currentScroll > lastScroll && currentScroll > 50) {
+                    body.classList.add('reading');
+                } 
+                // Nếu cuộn lên mạnh
+                else if (currentScroll < lastScroll - 20) {
+                    body.classList.remove('reading');
+                }
+                lastScroll = currentScroll;
+            });
+
+            // 2.5. Khởi tạo và xử lý Dark Mode (Shadow/Dark)
+            const themeToggleBtn = document.getElementById('readThemeToggleBtn');
+            const themeIcon = document.getElementById('readThemeIcon');
+            
+            // Lấy cài đặt dark mode từ localStorage (chung với layout)
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = 'light_mode';
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                if (document.documentElement.getAttribute('data-theme') === 'dark' || body.getAttribute('data-theme') === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    body.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.textContent = 'dark_mode';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    body.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.textContent = 'light_mode';
+                }
+            });
+
+            // 3. Bookmark toggle
+            bookmarkBtn.addEventListener('click', () => {
+                const icon = bookmarkBtn.querySelector('span');
+                if (icon.textContent === 'bookmark_border') {
+                    icon.textContent = 'bookmark';
+                } else {
+                    icon.textContent = 'bookmark_border';
+                }
+            });
+
+            // 4. Open Settings Modal
+            themeBtn.addEventListener('click', () => {
+                document.getElementById('settingsModal').classList.add('active');
+            });
+        });
+
+        // Add event listeners for prev/next buttons globally
+        let currentDir = 'vertical';
+        let currentGap = 0;
+        let currentPageIndex = 0;
+        let pagesConfigured = [];
+
+        document.getElementById('horizPrevBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                updateHorizontalPage();
+            }
+        });
+        document.getElementById('horizNextBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentPageIndex < document.querySelectorAll('.manga-page').length - 1) {
+                currentPageIndex++;
+                updateHorizontalPage();
+            }
+        });
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function setDirection(dir) {
+            currentDir = dir;
+            document.getElementById('dirHorizontal').classList.remove('active');
+            document.getElementById('dirVertical').classList.remove('active');
+            
+            const preview = document.getElementById('previewContent');
+            if (dir === 'horizontal') {
+                document.getElementById('dirHorizontal').classList.add('active');
+                preview.classList.add('horizontal');
+            } else {
+                document.getElementById('dirVertical').classList.add('active');
+                preview.classList.remove('horizontal');
+            }
+        }
+
+        function updateGap(val) {
+            currentGap = val;
+            document.getElementById('gapValue').innerText = val + 'px';
+            document.getElementById('previewContent').style.gap = val + 'px';
+        }
+
+        function resetSettings() {
+            setDirection('vertical');
+            document.getElementById('gapSlider').value = 0;
+            updateGap(0);
+        }
+
+        function saveSettings() {
+            closeSettings();
+            applyLayout();
+        }
+
+        function applyLayout() {
+            const container = document.querySelector('.manga-container');
+            pagesConfigured = Array.from(document.querySelectorAll('.manga-page'));
+            
+            const prevBtn = document.getElementById('horizPrevBtn');
+            const nextBtn = document.getElementById('horizNextBtn');
+            const gapGroup = document.getElementById('gapSettingGroup');
+
+            if (currentDir === 'horizontal') {
+                container.classList.add('horizontal-mode');
+                container.style.gap = '0px'; 
+                container.style.flexDirection = 'row';
+
+                // Disable gap slider styling
+                document.getElementById('gapSlider').disabled = true;
+                gapGroup.style.opacity = '0.5';
+
+                prevBtn.style.display = 'flex';
+                nextBtn.style.display = 'flex';
+
+                updateHorizontalPage();
+            } else {
+                container.classList.remove('horizontal-mode');
+                container.style.gap = currentGap + 'px';
+                container.style.flexDirection = 'column';
+                
+                // Enable gap slider
+                document.getElementById('gapSlider').disabled = false;
+                gapGroup.style.opacity = '1';
+
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+
+                pagesConfigured.forEach(p => p.style.display = 'flex');
+            }
+        }
+
+        function updateHorizontalPage() {
+            pagesConfigured = Array.from(document.querySelectorAll('.manga-page'));
+            pagesConfigured.forEach((p, index) => {
+                if (index === currentPageIndex) {
+                    p.style.display = 'flex';
+                } else {
+                    p.style.display = 'none';
+                }
+            });
+            window.scrollTo(0, 0); // Removed smooth scroll memory which caused a flash scroll effect
+        }
+    </script>
+</body>
+</html>

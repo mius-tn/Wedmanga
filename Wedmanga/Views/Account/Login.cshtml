@@ -1,0 +1,356 @@
+@{
+    ViewData["Title"] = "Đăng Nhập";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Scripts {
+    <style>
+        .auth-container {
+            min-height: calc(100vh - 80px - 100px); /* Tương thích với main-content */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 15px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        /* Khôi phục lại SVG background nhưng canh chỉnh lại họa tiết để tránh bị lệch */
+        .auth-sakura-bg {
+            position: absolute;
+            top: 0; left: 0; 
+            width: 100vw;
+            height: 100vh;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="%23FADADD" opacity="0.3" d="M50 0 C60 20 80 30 100 50 C80 70 60 80 50 100 C40 80 20 70 0 50 C20 30 40 20 50 0 Z"/></svg>');
+            background-size: 150px 150px;
+            background-position: center center;
+            background-repeat: repeat;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .auth-card {
+            background-color: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: var(--shadow-hover);
+            position: relative;
+            z-index: 1;
+            border: 1px solid var(--border-color);
+            margin: 0 auto;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-logo {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            color: var(--color-sakura);
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            box-sizing: border-box; /* Đảm bảo padding không làm phình kích thước form control gây lệch */
+            padding: 0.85rem 1.2rem;
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-pill);
+            background-color: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: var(--transition-smooth);
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--color-matcha);
+            box-shadow: 0 0 0 4px rgba(207, 232, 213, 0.3);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+        
+        /* Validation style */
+        .form-control.is-invalid {
+            border-color: #ffb3b3;
+        }
+        .form-control.is-invalid:focus {
+            box-shadow: 0 0 0 4px rgba(255, 179, 179, 0.3);
+        }
+
+        .auth-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        /* Custom Checkbox */
+        .custom-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--color-border);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            transition: 0.2s;
+        }
+
+        .custom-checkbox:checked {
+            background-color: var(--color-sakura);
+            border-color: var(--color-sakura);
+        }
+
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .forgot-pass {
+            color: var(--color-sakura);
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .forgot-pass:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 0.9rem;
+            border-radius: var(--radius-pill);
+            border: none;
+            background-color: #f7a8b4; /* Đậm hơn sakura pink một chút */
+            color: white;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: inherit;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(247, 168, 180, 0.4);
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(247, 168, 180, 0.5);
+            background-color: #f596a5;
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 2rem 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .auth-divider::before, .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: var(--color-border);
+        }
+
+        .auth-divider span {
+            padding: 0 1rem;
+        }
+
+        .social-login {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .btn-social {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid var(--color-border);
+            background-color: var(--bg-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-social:hover {
+            background-color: var(--color-sakura-light);
+            border-color: var(--color-sakura);
+            transform: scale(1.1);
+        }
+
+        .btn-social img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .auth-footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-link {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+
+        @@media (max-width: 576px) {
+            .auth-card {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+
+    <script>
+        // Sakura falling animation script (Micro-interaction)
+        document.addEventListener('DOMContentLoaded', () => {
+             const container = document.querySelector('.auth-container');
+             setInterval(() => {
+                 const petal = document.createElement('div');
+                 // Use simple dot if no SVG
+                 petal.style.position = 'absolute';
+                 petal.style.width = '8px';
+                 petal.style.height = '8px';
+                 petal.style.background = 'var(--color-sakura)';
+                 petal.style.borderRadius = '50% 0 50% 50%';
+                 petal.style.opacity = Math.random() * 0.5 + 0.2;
+                 petal.style.left = Math.random() * 100 + 'vw';
+                 petal.style.top = '-10px';
+                 petal.style.pointerEvents = 'none';
+                 petal.style.zIndex = '0';
+                 
+                 const duration = Math.random() * 3 + 2; // 2-5s
+                 petal.style.transition = `top ${duration}s linear, left ${duration}s linear, transform ${duration}s linear`;
+                 
+                 container.appendChild(petal);
+                 
+                 setTimeout(() => {
+                     petal.style.top = '100vh';
+                     petal.style.left = `calc(${petal.style.left} + ${Math.random() * 100 - 50}px)`;
+                     petal.style.transform = `rotate(${Math.random() * 360}deg)`;
+                 }, 50);
+
+                 setTimeout(() => {
+                     petal.remove();
+                 }, duration * 1000);
+
+             }, 800);
+        });
+    </script>
+}
+
+<div class="auth-container">
+    <div class="auth-sakura-bg"></div>
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">MangaYom</div>
+            <div class="auth-desc">Đăng nhập để tiếp tục câu chuyện dang dở</div>
+        </div>
+
+
+
+        <form asp-controller="Account" asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <!-- Hiển thị lỗi Validation từ Controller -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div style="color: #d32f2f; margin-bottom: 1rem; font-size: 0.9rem; text-align: center;">
+                    @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+                </div>
+            }
+
+            <div class="form-group">
+                <label class="form-label">Email / Tài khoản</label>
+                <input type="text" name="email" class="form-control" placeholder="admin@mangayom.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <div class="auth-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" class="custom-checkbox">
+                    Ghi nhớ đăng nhập
+                </label>
+                <a href="#" class="forgot-pass">Quên mật khẩu?</a>
+            </div>
+
+            <button type="submit" class="btn-auth">Đăng Nhập</button>
+        </form>
+
+        <div class="auth-divider">
+            <span>Hoặc</span>
+        </div>
+
+        <div class="social-login">
+            <!-- Google Login Icon (CSS only placeholder) -->
+            <button class="btn-social" aria-label="Login with Google">
+                <span class="material-symbols-rounded" style="color: #DB4437;">g_mobiledata</span>
+            </button>
+            <button class="btn-social" aria-label="Login with Facebook">
+                <span class="material-symbols-rounded" style="color: #4267B2;">facebook</span>
+            </button>
+        </div>
+
+        <div class="auth-footer">
+            Chưa có tài khoản? <a asp-controller="Account" asp-action="Register" class="auth-link">Đăng ký ngay</a>
+        </div>
+    </div>
+</div>
